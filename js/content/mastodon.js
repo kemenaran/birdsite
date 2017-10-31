@@ -68,7 +68,7 @@ function setup() {
         checkbox.addEventListener('change', didClickCrosspostCheckbox);
         label.appendChild(checkbox);
 
-        let labelText = document.createTextNode("Also post on Twitter");
+        let labelText = document.createTextNode("Also post on bird site");
         label.appendChild(labelText);
 
         // Add an additional click event on the "Toot!" button
