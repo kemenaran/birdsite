@@ -12,11 +12,18 @@
   "content_scripts": [
     {
       "matches": [ "https://joinmastodon.org/*" ],
-      "js": [ "js/session.js" ]
+      "js": [ "js/session.js" ],
+      "run_at": "document_start"
     },
     {
       "matches": [ "https://*/*" ],
-      "js": [ "js/content/mastodon.js" ],
+      "js": [
+        "js/lib/jquery.min.js",
+        "js/lib/oAuth.js",
+        "js/lib/sha1.js",
+        "js/lib/twitter.js",
+        "js/content/mastodon.js"
+      ],
       "run_at": "document_end",
       "all_frames": false
     }

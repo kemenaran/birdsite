@@ -1,11 +1,7 @@
-run();
+/* Import global libraries */
+//var Twitter;
 
-function debugMessage(message) {
-    let debugEnabled = false; // set to true to enable debugging
-    if (debugEnabled) {
-        console.debug(message);
-    }
-}
+run();
 
 function run() {
     // Discard non-mastodon web app early
@@ -77,6 +73,26 @@ function setup() {
         // Add click event to the "Toot!" button
         let tootButton = composeForm.querySelector('.compose-form__publish button');
         tootButton.addEventListener('click', didClickTootButton);
+
+        // DEBUG
+
+        let connectToTwitter = document.createElement('button');
+        connectToTwitter.setAttribute('id', 'tooter-connect-to-twitter');
+        connectToTwitter.setAttribute('class', 'button button--block');
+        connectToTwitter.textContent = '...';
+        tooterContainer.appendChild(connectToTwitter);
+
+        Twitter.isLoggedIn(function(items) {
+            if (!items.oauth_token || !items.oauth_token_secret) {
+                connectToTwitter.textContent = "Connect to Twitter";
+                connectToTwitter.addEventListener('click', _debugConnectToTwitter);
+            } else {
+                connectToTwitter.textContent = "Connected! Logout";
+                connectToTwitter.addEventListener('click', _debugLogout);
+            }
+        });
+
+        // /DEBUG
     }
 }
 
@@ -98,3 +114,21 @@ function crossPostToTwitter(message) {
 
     alert('Cross-post message to Twitter : ' + message);
 }
+
+function debugMessage(message) {
+    let debugEnabled = false; // set to true to enable debugging
+    if (debugEnabled) {
+        console.debug(message);
+    }
+}
+
+// DEBUG
+
+function _debugConnectToTwitter() {
+    Twitter.authenticate();
+}
+
+function _debugLogout() {
+    Twitter.logout();
+}
+
