@@ -31,7 +31,7 @@
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'",
   "content_scripts": [{
-    "matches": ["https://andyjiang.com/*"],
+    "matches": ["https://joinmastodon.org/*"],
     "js": ["js/session.js"]
   }]
 }

@@ -1,7 +1,7 @@
 (function() {
-  var API_URL = 'https://api.twitter.com/';
-  var consumer_key = 'XXXXXXXXXXXXXXXXX';
-  var consumer_secret = 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY';
+  var API_URL         = 'https://api.twitter.com/';
+  var consumer_key    = '9Y6TkkJkq65aBTi07ozaNYgP7';
+  var consumer_secret = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4R7w';
   var Twitter = {
     oauth_token: null,
     oauth_token_secret: '',
