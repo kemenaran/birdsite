@@ -28,11 +28,6 @@
       "all_frames": false
     }
   ],
-  "browser_action": {
-    "default_icon": "icons/icon48.png",
-    "default_title": "Chrome Extension Twitter Oauth",
-    "default_popup": "popup.html"
-  },
   "background": {
     "scripts": [
       "js/lib/jquery.min.js",

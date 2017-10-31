@@ -21,7 +21,6 @@
       chrome.storage.local.remove(['oauth_token', 'oauth_token_secret']);
       Twitter.oauth_token = false;
       Twitter.oauth_token_secret = false;
-      chrome.browserAction.setBadgeText({text: ''});
     },
     isLoggedIn: function(cb) {
       chrome.storage.local.get(['oauth_token', 'oauth_token_secret'], cb);
