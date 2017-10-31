@@ -78,12 +78,8 @@ function setup() {
 }
 
 function didClickCrosspostCheckbox() {
-    Twitter.isLoggedIn(function(items) {
-        let isLoggedIn = items.oauth_token && items.oauth_token_secret;
-        if (isLoggedIn) {
-            Twitter.setOAuthTokens(items);
-        }
-    });
+    // Ensure the user is authenticated - and present an authentication pop-up if not
+    Twitter.prepare();
 }
 
 function didClickTootButton() {
@@ -102,10 +98,18 @@ function crossPostToTwitter(message) {
         return;
     }
 
-    let params = {
-        status: message
-    };
-    Twitter.api('statuses/update', 'POST', params);
+    Twitter.prepare()
+    .then(() => {
+        let params = { status: message };
+        return Twitter.api('statuses/update', 'POST', params)
+    })
+    .then(() => {
+        document.querySelector('.tooter__crosspost').appendChild(document.createTextNode(' ✅'));
+        document.querySelector('.tooter__crosspost-checkbox').checked = false;
+    })
+    .catch((error) => {
+        alert('An error occured while posting to Twitter: ' + error);
+    });
 }
 
 function debugMessage(message) {

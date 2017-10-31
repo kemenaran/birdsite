@@ -5,6 +5,20 @@
   var Twitter = {
     oauth_token: null,
     oauth_token_secret: '',
+
+    prepare: function() {
+      return this._fetchStoredCredentials()
+      .then((credentials) => {
+        let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret;
+        if (isLoggedIn) {
+          this.setOAuthTokens(credentials);
+        } else {
+          // TODO: promisify `authenticate`
+          this.authenticate();
+        }
+      });
+    },
+
     authenticate: function() {
       Twitter.oauth_token_secret = '';
       Twitter.oauth_token = null;
@@ -17,19 +31,28 @@
         window.open(url);
       }, this));
     },
+
     logout: function() {
       chrome.storage.local.remove(['oauth_token', 'oauth_token_secret']);
       Twitter.oauth_token = false;
       Twitter.oauth_token_secret = false;
     },
-    isLoggedIn: function(cb) {
-      chrome.storage.local.get(['oauth_token', 'oauth_token_secret'], cb);
+
+    _fetchStoredCredentials: function() {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get(['oauth_token', 'oauth_token_secret'], function(results) {
+          if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
+          else { resolve(results); }
+        });
+      });
     },
+
     setOAuthTokens: function(tokens, cb) {
       Twitter.oauth_token = tokens.oauth_token;
       Twitter.oauth_token_secret = tokens.oauth_token_secret;
       chrome.storage.local.set({ 'oauth_token': tokens.oauth_token, 'oauth_token_secret': tokens.oauth_token_secret }, cb);
     },
+
     api: function(path /* params obj, callback fn */) {
       var args = Array.prototype.slice.call(arguments, 1),
           fn = false,
@@ -75,12 +98,13 @@
         p.push(k + '=' + OAuth.percentEncode(v));
       });
 
-      $[method.toLowerCase()](API_URL + path, p.join('&'), fn).error(function(res) {
+      return $[method.toLowerCase()](API_URL + path, p.join('&'), fn).error(function(res) {
         if(res && res.responseText && res.responseText.match(/89/)) {
           Twitter.authenticate();
         }
       });
     },
+
     deparam: function(params) {
       var obj = {};
       $.each(params.split('&'), function() {
