@@ -1,8 +1,8 @@
 {
-  "name": "chrome-extension-twitter-oauth-example",
+  "name": "BirdSite",
   "version": "0.0.1",
   "manifest_version": 2,
-  "description": "Chrome Extension Twitter Oauth Example",
+  "description": "A browser extension for cross-posting Mastodon toots to Twitter.",
   "homepage_url": "https://andyjiang.com",
   "icons": {
     "16": "icons/icon16.png",
