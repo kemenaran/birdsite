@@ -87,6 +87,7 @@ function setup() {
                 connectToTwitter.textContent = "Connect to Twitter";
                 connectToTwitter.addEventListener('click', _debugConnectToTwitter);
             } else {
+                Twitter.setOAuthTokens(items);
                 connectToTwitter.textContent = "Connected! Logout";
                 connectToTwitter.addEventListener('click', _debugLogout);
             }
@@ -112,7 +113,10 @@ function crossPostToTwitter(message) {
         return;
     }
 
-    alert('Cross-post message to Twitter : ' + message);
+    let params = {
+        status: message
+    };
+    Twitter.api('statuses/update', 'POST', params);
 }
 
 function debugMessage(message) {
