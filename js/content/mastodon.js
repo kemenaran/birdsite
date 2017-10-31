@@ -65,36 +65,25 @@ function setup() {
         checkbox.setAttribute('class', 'tooter__crosspost-checkbox');
         checkbox.setAttribute('name', 'tooter-crosspost-checkbox');
         checkbox.setAttribute('type', 'checkbox');
+        checkbox.addEventListener('change', didClickCrosspostCheckbox);
         label.appendChild(checkbox);
 
         let labelText = document.createTextNode("Also post on Twitter");
         label.appendChild(labelText);
 
-        // Add click event to the "Toot!" button
+        // Add an additional click event on the "Toot!" button
         let tootButton = composeForm.querySelector('.compose-form__publish button');
         tootButton.addEventListener('click', didClickTootButton);
-
-        // DEBUG
-
-        let connectToTwitter = document.createElement('button');
-        connectToTwitter.setAttribute('id', 'tooter-connect-to-twitter');
-        connectToTwitter.setAttribute('class', 'button button--block');
-        connectToTwitter.textContent = '...';
-        tooterContainer.appendChild(connectToTwitter);
-
-        Twitter.isLoggedIn(function(items) {
-            if (!items.oauth_token || !items.oauth_token_secret) {
-                connectToTwitter.textContent = "Connect to Twitter";
-                connectToTwitter.addEventListener('click', _debugConnectToTwitter);
-            } else {
-                Twitter.setOAuthTokens(items);
-                connectToTwitter.textContent = "Connected! Logout";
-                connectToTwitter.addEventListener('click', _debugLogout);
-            }
-        });
-
-        // /DEBUG
     }
+}
+
+function didClickCrosspostCheckbox() {
+    Twitter.isLoggedIn(function(items) {
+        let isLoggedIn = items.oauth_token && items.oauth_token_secret;
+        if (isLoggedIn) {
+            Twitter.setOAuthTokens(items);
+        }
+    });
 }
 
 function didClickTootButton() {
@@ -125,14 +114,3 @@ function debugMessage(message) {
         console.debug(message);
     }
 }
-
-// DEBUG
-
-function _debugConnectToTwitter() {
-    Twitter.authenticate();
-}
-
-function _debugLogout() {
-    Twitter.logout();
-}
-
