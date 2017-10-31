@@ -53,7 +53,7 @@
       }
 
       /* Add an oauth token if it is an api request */
-      Twitter.oauth_token && (params.oauth_token = Twitter.oauth_token);
+      params.oauth_token = params.oauth_token || Twitter.oauth_token;
 
       /* Add a 1.1 and .json if its not an authentication request */
       (!path.match(/oauth/)) && (path = '1.1/' + path + '.json');
