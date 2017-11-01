@@ -22,7 +22,7 @@
         "js/lib/oAuth.js",
         "js/lib/sha1.js",
         "js/lib/twitter.js",
-        "js/content/mastodon.js"
+        "js/mastodon_page.js"
       ],
       "run_at": "document_end",
       "all_frames": false
@@ -34,7 +34,7 @@
       "js/lib/oAuth.js",
       "js/lib/sha1.js",
       "js/lib/twitter.js",
-      "js/background.js"
+      "js/background_page.js"
     ],
     "persistent": false
   },

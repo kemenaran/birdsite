@@ -1,5 +1,5 @@
 /* Import global libraries */
-//var Twitter;
+var Twitter;
 
 run();
 
