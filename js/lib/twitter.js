@@ -5,28 +5,41 @@
   var Twitter = {
     oauth_token: null,
     oauth_token_secret: '',
+    username: null,
 
-    prepare: function() {
+    // Load saved Twitter credentials.
+    // Returns a promise that will be resolved with the credentials if found,
+    // and rejected otherwise.
+    loadCredentials: function() {
       return this._fetchStoredCredentials()
       .then((credentials) => {
-        let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret;
+        let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret && credentials.username;
         if (isLoggedIn) {
           this.setOAuthTokens(credentials);
+          return credentials;
         } else {
-          // TODO: promisify `authenticate`
-          this.authenticate();
+          return new Error('No Twitter API credentials found');
         }
       });
     },
 
+    // Ensure the user is authenticated.
+    // If yes, quickly returns a resolved Promise.
+    // If no, start the OAuth flow and return a promise that will resolve at the end of the flow.
     authenticate: function() {
+      return this.loadCredentials()
+      .then(isLoggedIn => isLoggedIn || this.startAuthentication());
+    },
+
+    startAuthentication: function() {
       Twitter.oauth_token_secret = '';
       Twitter.oauth_token = null;
 
-      this.api('oauth/request_token', 'POST', $.proxy(function(response) {
+      return this.api('oauth/request_token', 'POST', $.proxy(function(response) {
         var des = this.deparam(response);
         Twitter.oauth_token_secret = des.oauth_token_secret;
         Twitter.oauth_token = des.oauth_token;
+        Twitter.username = 'foo';
         var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + Twitter.oauth_token;
         window.open(url);
       }, this));
@@ -36,6 +49,7 @@
       chrome.storage.local.remove(['oauth_token', 'oauth_token_secret']);
       Twitter.oauth_token = false;
       Twitter.oauth_token_secret = false;
+      Twitter.username = null;
     },
 
     _fetchStoredCredentials: function() {
@@ -50,9 +64,12 @@
     setOAuthTokens: function(tokens, cb) {
       Twitter.oauth_token = tokens.oauth_token;
       Twitter.oauth_token_secret = tokens.oauth_token_secret;
+      Twitter.username = 'foo';
       chrome.storage.local.set({ 'oauth_token': tokens.oauth_token, 'oauth_token_secret': tokens.oauth_token_secret }, cb);
     },
 
+    // Send a request to the Twitter API.
+    // Returns a promise that resolves when the request finishes.
     api: function(path /* params obj, callback fn */) {
       var args = Array.prototype.slice.call(arguments, 1),
           fn = false,
@@ -100,7 +117,7 @@
 
       return $[method.toLowerCase()](API_URL + path, p.join('&'), fn).error(function(res) {
         if(res && res.responseText && res.responseText.match(/89/)) {
-          Twitter.authenticate();
+          Twitter.startAuthentication();
         }
       });
     },
