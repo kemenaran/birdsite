@@ -61,114 +61,97 @@ class BirdSiteStore {
 /* UI component ***********************************/
 
 class BirdSiteUI {
-  // Inject a "Post to the bird site" checkbox under Mastodon compose form
-  injectUI(store) {
-    let composeForm = document.querySelector('div#mastodon .compose-form');
-    if (!composeForm || composeForm.querySelector('.tooter')) { 
-      return;
-    }
+  constructor(composeForm, actions) {
+    this.composeForm = composeForm;
+    this.actions = actions;
 
-    let tooterContainer = document.createElement('div');
-    tooterContainer.setAttribute('class', 'tooter');
-    composeForm.appendChild(tooterContainer);
-
-    let label = document.createElement('label');
-    label.setAttribute('class', 'tooter__crosspost');
-    tooterContainer.appendChild(label);
-
-    let checkbox = document.createElement('input');
-    checkbox.setAttribute('class', 'tooter__crosspost-checkbox');
-    checkbox.setAttribute('name', 'tooter-crosspost-checkbox');
-    checkbox.setAttribute('type', 'checkbox');
-    checkbox.addEventListener('change', didClickCrosspostCheckbox);
-    label.appendChild(checkbox);
-
-    let labelText = document.createElement('span');
-    labelText.setAttribute('class', 'tooter__label-text');
-    label.appendChild(labelText);
-
-    let identity = document.createElement('a');
-    identity.setAttribute('class', 'tooter__identity');
-    identity.setAttribute('href', '#');
-    identity.setAttribute('title', 'Click to logout from the bird site');
-    identity.textContent = " (as @username)";
-    identity.addEventListener('click', logoutAction);
-    tooterContainer.appendChild(identity);
-
-    // Add an additional click event on the "Toot!" button
-    let tootButton = composeForm.querySelector('.compose-form__publish button');
-    tootButton.addEventListener('click', didClickTootButton);
-
-    this.updateState(store);
+    let tootButton = document.querySelector('#mastodon .compose-form__publish button');
+    tootButton.addEventListener('click', this._tootButtonClicked.bind(this));
   }
 
-  // Update the UI according to the given state
-  updateState(store) {
-    let state = store.state;
-    let internalState = {
-      rootClass: 'tooter--' + state.twitterState,
-      username: state.username,
-
-      labelText: null,
-      enabled: false,
+  render(model) {
+    let state = {
+      step:            model.twitterState,
+      username:        model.username,
+      checked:         model.checked,
+      labelText:       null,
+      enabled:         false,
       identityVisible: false,
     };
 
-    switch (state.twitterState) {
+    switch (state.step) {
       case TwitterState.SIGNED_OUT:
-        internalState.labelText = "Also post on bird site";
-        internalState.identityVisible = false;
-        internalState.enabled = true;
+        state.labelText = "Also post on bird site";
+        state.identityVisible = false;
+        state.enabled = true;
         break;
       case TwitterState.AUTHENTICATING:
-        internalState.labelText = "Authenticating…";
-        internalState.identityVisible = false;
-        internalState.enabled = false;
+        state.labelText = "Authenticating…";
+        state.identityVisible = false;
+        state.enabled = false;
         break;
       case TwitterState.READY:
-        internalState.labelText = "Also post on bird site";
-        internalState.identityVisible = true;
-        internalState.enabled = true;
+        state.labelText = "Also post on bird site";
+        state.identityVisible = true;
+        state.enabled = true;
         break;
       case TwitterState.POSTING:
-        internalState.labelText = "Also post on bird site…";
-        internalState.identityVisible = true;
-        internalState.enabled = false;
+        state.labelText = "Also post on bird site…";
+        state.identityVisible = true;
+        state.enabled = false;
         break;
       case TwitterState.SUCCESS:
-        internalState.labelText = "Also post on bird site";
-        internalState.identityVisible = true;
-        internalState.enabled = false;
+        state.labelText = "Also post on bird site";
+        state.identityVisible = true;
+        state.enabled = false;
         break;
       case TwitterState.FAILURE:
-        internalState.labelText = "An error occured while posting to the bird site";
-        internalState.identityVisible = true;
-        internalState.enabled = true;
+        state.labelText = "An error occured while posting to the bird site";
+        state.identityVisible = true;
+        state.enabled = true;
         break;
     }
 
-    // Apply internal state
-    let rootDiv = document.querySelector('.compose-form .tooter');
+    // Render the component
+    let html = `
+      <div class="tooter tooter--${state.step}" ${state.enabled ? '' : 'disabled'}>
+        <label class="tooter__crosspost">
+          <input class="tooter__crosspost-checkbox" name="tooter-crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''}>
+          <span class="tooter__label-text">
+            ${state.labelText}
+          </span>
+        </label>
+        <a class="tooter__identity"
+           href="#"
+           style="visibility: ${state.identityVisible ? 'visible' : 'hidden'};"
+           title="Click to logout from the bird site">
+            (as @${state.username})
+        </a>
+      </div>`;
 
-    let rootClass = rootDiv.className;
-    rootClass.replace(/\.tooter--[^ ]*/, '');
-    rootClass += ' ' + internalState.rootClass;
-    rootDiv.className = rootClass;
-
-    if (internalState.enabled) {
-      rootDiv.removeAttribute('disabled');
-    } else {
-      rootDiv.setAttribute('disabled', '');
+    let composeForm = document.querySelector('div#mastodon .compose-form');
+    let rootElement = composeForm.querySelector('.compose-form > .tooter');
+    if (rootElement) {
+      composeForm.removeChild(rootElement);
     }
+    composeForm.insertAdjacentHTML('beforeend', html);
+    composeForm.querySelector('.tooter__crosspost-checkbox').addEventListener('change', this._checkboxChanged.bind(this));
+  }
 
-    let labelText = rootDiv.querySelector('.tooter__label-text');
-    labelText.textContent = internalState.labelText;
+  _checkboxChanged(event) {
+    let checkbox = event.target;
+    this.action.toggle(checkbox.checked);
+  }
 
-    let identity = rootDiv.querySelector('.tooter__identity'),
-        identityText = internalState.username ? ` (as @${internalState.username})` : '',
-        visibility = internalState.identityVisible ? 'visible' : 'hidden';
-    identity.textContent = identityText;
-    identity.style.visibility = visibility;
+  _tootButtonClicked() {
+    let checkbox = document.querySelector('.compose-form .tooter__crosspost-checkbox');
+    if (checkbox.checked) {
+      let textarea = document.querySelector('.compose-form textarea');
+      let toot = textarea.value;
+      if (toot.length > 0) {
+        this.actions.send(toot);
+      }
+    }
   }
 }
 
@@ -221,35 +204,28 @@ function inject() {
     return;
   }
 
-  birdSiteUI = new BirdSiteUI();
+  birdSiteUI = new BirdSiteUI(composeForm, {
+    toggle: toggleCheckbox,
+    send: crossPostToTwitter
+  });
   store = new BirdSiteStore();
 
   Twitter.loadCredentials()
   .then((username) => {
     store.transitionToSignedIn(username);
-    birdSiteUI.injectUI(store);
+    birdSiteUI.render(store.state);
   })
   .catch(() => {
     store.transitionToSignedOut();
-    birdSiteUI.injectUI(store);
+    birdSiteUI.render(store.state);
   });
 }
 
 /** Actions */
 
-function didClickCrosspostCheckbox() {
-  let crossPostCheckbox = document.querySelector('.tooter__crosspost-checkbox');
-  store.toggleChecked(crossPostCheckbox.checked);
-  birdSiteUI.updateState(store);
-}
-
-function didClickTootButton() {
-  let crossPostCheckbox = document.querySelector('.tooter__crosspost-checkbox');
-  if (crossPostCheckbox.checked) {
-    let textarea = document.querySelector('.compose-form textarea');
-    let tootText = textarea.value;
-    crossPostToTwitter(tootText);
-  }
+function toggleCheckbox(checked) {
+  store.toggleChecked(checked);
+  birdSiteUI.render(store.state);
 }
 
 function crossPostToTwitter(message) {
@@ -261,26 +237,26 @@ function crossPostToTwitter(message) {
   Twitter.loadCredentials()
   .catch(() => {
     store.transitionToAuthenticating();
-    birdSiteUI.updateState(store);
+    birdSiteUI.render(store.state);
     return Twitter.authenticate();
   })
   .then((username) => {
     store.transitionToSignedIn(username);
-    birdSiteUI.updateState(store);
+    birdSiteUI.render(store.state);
   })
   .then(() => {
     store.transitionToPosting();
-    birdSiteUI.updateState(store);
+    birdSiteUI.render(store.state);
     let params = { status: message };
     return Twitter.api('statuses/update', 'POST', params);
   })
   .then(() => {
     store.transitionToSuccess();
-    birdSiteUI.updateState(store);
+    birdSiteUI.render(store.state);
   })
   .catch((error) => {
     store.transitionToFailure();
-    birdSiteUI.updateState(store);
+    birdSiteUI.render(store.state);
     alert('An error occured while posting to Twitter: ' + error);
   });
 }
@@ -288,7 +264,7 @@ function crossPostToTwitter(message) {
 function logoutAction() {
   Twitter.logout();
   store.transitionToSignedOut();
-  birdSiteUI.updateState(store);
+  birdSiteUI.render(store.state);
 }
 
 function debugMessage(message) {
