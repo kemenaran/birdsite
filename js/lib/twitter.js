@@ -4,8 +4,11 @@
   var consumer_secret = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4R7w';
   var Twitter = {
     oauth_token: null,
-    oauth_token_secret: '',
-    username: null,
+    oauth_token_secret: null,
+    screen_name: null,
+
+    resolveAuthentication: null,
+    rejectAuthentication: null,
 
     // Load saved Twitter credentials.
     // Returns a promise that will be resolved with the credentials if found,
@@ -13,75 +16,58 @@
     loadCredentials: function() {
       return this._fetchStoredCredentials()
       .then((credentials) => {
-        let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret && credentials.username;
+        let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret && credentials.screen_name;
         if (isLoggedIn) {
-          this.setOAuthTokens(credentials);
-          return credentials;
+          this._setCredentials(credentials);
+          return credentials.screen_name;
         } else {
-          return new Error('No Twitter API credentials found');
+          throw new Error('No Twitter API credentials found');
         }
       });
     },
 
     // Ensure the user is authenticated.
     // If yes, quickly returns a resolved Promise.
-    // If no, start the OAuth flow and return a promise that will resolve at the end of the flow.
+    // If no, start the OAuth flow, and return a promise that will resolve at the end of the flow.
     authenticate: function() {
       return this.loadCredentials()
-      .then(isLoggedIn => isLoggedIn || this.startAuthentication());
-    },
-
-    startAuthentication: function() {
-      Twitter.oauth_token_secret = '';
-      Twitter.oauth_token = null;
-
-      return this.api('oauth/request_token', 'POST', $.proxy(function(response) {
-        var des = this.deparam(response);
-        Twitter.oauth_token_secret = des.oauth_token_secret;
-        Twitter.oauth_token = des.oauth_token;
-        Twitter.username = 'foo';
-        var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + Twitter.oauth_token;
-        window.open(url);
-      }, this));
-    },
-
-    logout: function() {
-      chrome.storage.local.remove(['oauth_token', 'oauth_token_secret']);
-      Twitter.oauth_token = false;
-      Twitter.oauth_token_secret = false;
-      Twitter.username = null;
-    },
-
-    _fetchStoredCredentials: function() {
-      return new Promise((resolve, reject) => {
-        chrome.storage.local.get(['oauth_token', 'oauth_token_secret'], function(results) {
-          if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
-          else { resolve(results); }
-        });
+      .catch(() => {
+        return this._startAuthentication();
       });
     },
 
-    setOAuthTokens: function(tokens, cb) {
-      Twitter.oauth_token = tokens.oauth_token;
-      Twitter.oauth_token_secret = tokens.oauth_token_secret;
-      Twitter.username = 'foo';
-      chrome.storage.local.set({ 'oauth_token': tokens.oauth_token, 'oauth_token_secret': tokens.oauth_token_secret }, cb);
+    // Finish the last authentication step, by providing the query parameters
+    // sent by Twitter to the callback pop-up page.
+    //
+    // This method is intended to be called from the background extension page.
+    // It will send a message to the content page, in order to resolves (or reject)
+    // the promise returned by `authenticate`.
+    completeAuthentication: function(queryParams) {
+      var params = this._deparam(queryParams);
+
+      this.api('oauth/access_token', 'POST', params)
+      .then(response => response.text())
+      .then((responseText) => {
+        return this._setCredentials(this._deparam(responseText));
+      })
+      .then(() => {
+        this._sendMessageToContentPage({ authState: 'success' });
+      })
+      .catch((error) => {
+        this._sendMessageToContentPage({ authState: 'failure', error: error });
+      });
     },
 
     // Send a request to the Twitter API.
     // Returns a promise that resolves when the request finishes.
-    api: function(path /* params obj, callback fn */) {
+    api: function(path /*, method, params */) {
       var args = Array.prototype.slice.call(arguments, 1),
-          fn = false,
           params = {},
           method = 'GET';
 
       /* Parse arguments to their appropriate position */
       for(var i in args) {
         switch(typeof args[i]) {
-          case 'function':
-            fn = args[i];
-          break;
           case 'object':
             params = args[i];
           break;
@@ -110,25 +96,134 @@
 
       OAuth.completeRequest(message, accessor);
 
-      var p = [];
-      $.each(OAuth.getParameterMap(message.parameters), function(k, v) {
-        p.push(k + '=' + OAuth.percentEncode(v));
+      var requestParams = new URLSearchParams();
+      $.each(OAuth.getParameterMap(message.parameters), function(key, value) {
+        if (value == null) {
+          value = '';
+        }
+        requestParams.append(key, value);
       });
 
-      return $[method.toLowerCase()](API_URL + path, p.join('&'), fn).error(function(res) {
-        if(res && res.responseText && res.responseText.match(/89/)) {
-          Twitter.startAuthentication();
-        }
+      return fetch(API_URL + path, { method: method, body: requestParams })
+        .catch((response) => {
+          if(res && res.responseText && res.responseText.match(/89/)) {
+            Twitter._startAuthentication();
+          }
+        });
+    },
+
+    // Clear user credentials.
+    logout: function() {
+      this._clearCredentials();
+    },
+
+    /* Private methods */
+
+    // Retrieve one or several values in the extension local storage.
+    // Returns a promise that will resolve when done.
+    _chromeLocalStorageGet: function(keys) {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get(keys, (results) => {
+          if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
+          else { resolve(results); }
+        });
       });
     },
 
-    deparam: function(params) {
+    // Store an object in the extension local storage.
+    // Returns a promise that will resolve when done.
+    _chromeLocalStorageSet: function(items) {
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.set(items, () => {
+          if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
+          else { resolve(); }
+        });
+      });
+    },
+
+    _setCredentials: function(credentials) {
+      Twitter.oauth_token        = credentials.oauth_token;
+      Twitter.oauth_token_secret = credentials.oauth_token_secret;
+      Twitter.screen_name        = credentials.screen_name;
+      return this._chromeLocalStorageSet({
+        'oauth_token':        credentials.oauth_token,
+        'oauth_token_secret': credentials.oauth_token_secret,
+        'screen_name':        credentials.screen_name
+      });
+    },
+
+    _fetchStoredCredentials: function() {
+      return this._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name']);
+    },
+
+    _clearCredentials: function() {
+      Twitter.oauth_token        = null;
+      Twitter.oauth_token_secret = null;
+      Twitter.screen_name        = null;
+      chrome.storage.local.remove(['oauth_token', 'oauth_token_secret', 'screen_name']);
+    },
+
+    // Convert a query string into an key-value object
+    _deparam: function(responseText) {
       var obj = {};
-      $.each(params.split('&'), function() {
+      $.each(responseText.split('&'), function() {
         var item = this.split('=');
         obj[item[0]] = item[1];
       });
       return obj;
+    },
+
+    _startAuthentication: function() {
+      this._clearCredentials();
+
+      return this.api('oauth/request_token', 'POST')
+      .then(response => response.text())
+      .then((responseText) => {
+        // Extract request tokens
+        var params = this._deparam(responseText);
+        this._setCredentials({
+          'oauth_token':        params.oauth_token,
+          'oauth_token_secret': params.oauth_token_secret,
+          'screen_name':        'foo' // FIXME
+        });
+        // Open a pop-up window to start the OAuth flow
+        var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + Twitter.oauth_token;
+        window.open(url);
+        // Listen for messages sent by the background page
+        chrome.runtime.onMessage.addListener(this._didReceiveMessage.bind(this));
+        // Return a promise that will be resolved (or rejected) when the callback URL is called
+        let oauthPromise = new Promise((resolve, reject) => {
+          Twitter.resolveAuthentication = resolve;
+          Twitter.rejectAuthentication = reject;
+        });
+        return oauthPromise;
+      });
+    },
+
+    _sendMessageToContentPage(messageObject) {
+      chrome.tabs.query({ currentWindow: true }, function(tabs) {
+        console.debug(`Sending message to tab ${tabs[0].id}`);
+        chrome.tabs.sendMessage(tabs[0].id, messageObject, function() {});
+      });
+    },
+
+    _didReceiveMessage(request, sender, sendResponse) {
+      console.debug("Received message: " + JSON.stringify(request));
+      
+      if (request.authState == 'success') {
+        this.loadCredentials()
+        .catch(error => Twitter.rejectAuthentication(error))
+        .then((screen_name) => {
+          Twitter.resolveAuthentication(screen_name);
+          Twitter.resolveAuthentication = null;
+          Twitter.rejectAuthentication = null;
+        });
+
+      } else if (request.authState == 'failure') {
+        Twitter.rejectAuthentication(request.error);
+        Twitter.resolveAuthentication = null;
+        Twitter.rejectAuthentication = null;
+      }
     }
   };
 

@@ -1,7 +1,4 @@
-var birdSiteUI,
-    store;
-
-detect();
+var birdSiteUI, store;
 
 /** Store *********************************/
 
@@ -21,6 +18,11 @@ class BirdSiteStore {
       username:     null,
       checked:      false
     };
+  }
+
+  transitionToAuthenticating() {
+    this.state.twitterState = TwitterState.AUTHENTICATING;
+    this.state.username = null;
   }
 
   transitionToSignedIn(username) {
@@ -89,7 +91,7 @@ class BirdSiteUI {
     identity.setAttribute('class', 'tooter__identity');
     identity.setAttribute('href', '#');
     identity.setAttribute('title', 'Click to logout from the bird site');
-    identity.textContent = " (as @username)"
+    identity.textContent = " (as @username)";
     identity.addEventListener('click', logoutAction);
     tooterContainer.appendChild(identity);
 
@@ -97,14 +99,14 @@ class BirdSiteUI {
     let tootButton = composeForm.querySelector('.compose-form__publish button');
     tootButton.addEventListener('click', didClickTootButton);
 
-    updateState(store);
+    this.updateState(store);
   }
 
-  // Update the UI according to the current state
+  // Update the UI according to the given state
   updateState(store) {
     let state = store.state;
     let internalState = {
-      rootClass: '.tooter--' + state.twitterState,
+      rootClass: 'tooter--' + state.twitterState,
       username: state.username,
 
       labelText: null,
@@ -149,8 +151,8 @@ class BirdSiteUI {
     let rootDiv = document.querySelector('.compose-form .tooter');
 
     let rootClass = rootDiv.className;
-    rootClass.replace(/.tooter--[^ ]*/, '');
-    rootClass += internalState.rootClass;
+    rootClass.replace(/\.tooter--[^ ]*/, '');
+    rootClass += ' ' + internalState.rootClass;
     rootDiv.className = rootClass;
 
     if (internalState.enabled) {
@@ -163,7 +165,7 @@ class BirdSiteUI {
     labelText.textContent = internalState.labelText;
 
     let identity = rootDiv.querySelector('.tooter__identity'),
-        identityText = internalState.username ? ` (as @#{internalState.username})` : '',
+        identityText = internalState.username ? ` (as @${internalState.username})` : '',
         visibility = internalState.identityVisible ? 'visible' : 'hidden';
     identity.textContent = identityText;
     identity.style.visibility = visibility;
@@ -171,6 +173,8 @@ class BirdSiteUI {
 }
 
 /** Injected extension code **********************************/
+
+detect();
 
 function detect() {
   // Discard non-mastodon web app early
@@ -221,13 +225,13 @@ function inject() {
   store = new BirdSiteStore();
 
   Twitter.loadCredentials()
-  .then((credentials) => {
-    store.transitionToSignedIn(credentials.username);
-    birdSiteUI.injectUI(store.state);
+  .then((username) => {
+    store.transitionToSignedIn(username);
+    birdSiteUI.injectUI(store);
   })
   .catch(() => {
     store.transitionToSignedOut();
-    birdSiteUI.injectUI(store.state);
+    birdSiteUI.injectUI(store);
   });
 }
 
@@ -240,7 +244,8 @@ function didClickCrosspostCheckbox() {
 }
 
 function didClickTootButton() {
-  if (store.checked) {
+  let crossPostCheckbox = document.querySelector('.tooter__crosspost-checkbox');
+  if (crossPostCheckbox.checked) {
     let textarea = document.querySelector('.compose-form textarea');
     let tootText = textarea.value;
     crossPostToTwitter(tootText);
@@ -257,13 +262,17 @@ function crossPostToTwitter(message) {
   .catch(() => {
     store.transitionToAuthenticating();
     birdSiteUI.updateState(store);
-    return Twitter.requestAuthentication();
+    return Twitter.authenticate();
+  })
+  .then((username) => {
+    store.transitionToSignedIn(username);
+    birdSiteUI.updateState(store);
   })
   .then(() => {
     store.transitionToPosting();
     birdSiteUI.updateState(store);
     let params = { status: message };
-    return Twitter.api('statuses/update', 'POST', params)
+    return Twitter.api('statuses/update', 'POST', params);
   })
   .then(() => {
     store.transitionToSuccess();
