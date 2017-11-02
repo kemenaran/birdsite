@@ -90,14 +90,14 @@
           parameters: [['oauth_consumer_key', consumer_key], ['oauth_signature_method', 'HMAC-SHA1']]
         };
 
-      $.each(params, function(k, v) {
-        OAuth.setParameter(message, k, v);
+      Object.entries(params).forEach(([key, value]) => {
+        OAuth.setParameter(message, key, value);
       });
 
       OAuth.completeRequest(message, accessor);
 
       var requestParams = new URLSearchParams();
-      $.each(OAuth.getParameterMap(message.parameters), function(key, value) {
+      Object.entries(OAuth.getParameterMap(message.parameters)).forEach(([key, value]) => {
         if (value == null) {
           value = '';
         }
@@ -165,10 +165,10 @@
 
     // Convert a query string into an key-value object
     _deparam: function(responseText) {
-      var obj = {};
-      $.each(responseText.split('&'), function() {
-        var item = this.split('=');
-        obj[item[0]] = item[1];
+      let obj = {};
+      responseText.split('&').forEach((param) => {
+        let pair = param.split('=');
+        obj[pair[0]] = pair[1];
       });
       return obj;
     },
