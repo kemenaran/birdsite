@@ -21,7 +21,8 @@
         "js/lib/oAuth.js",
         "js/lib/sha1.js",
         "js/lib/twitter.js",
-        "js/mastodon_page.js"
+        "js/mastodon/birdsite_ui.js",
+        "js/mastodon/birdsite.js"
       ],
       "run_at": "document_end",
       "all_frames": false
