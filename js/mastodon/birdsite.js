@@ -92,7 +92,7 @@ async function inject() {
   debugMessage('Compose form detected: loading extension');
   let composeForm = document.querySelector('div#mastodon .compose-form');
   if (!composeForm) {
-    console.warning('Couldn’t setup tooter extension for Mastodon web app Compose form: the compose form was not found.');
+    console.warning('Couldn’t setup BirdSite extension for Mastodon web app: the compose form was not found.');
     return;
   }
 

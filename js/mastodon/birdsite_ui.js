@@ -85,14 +85,14 @@ class BirdSiteUI {
     // and the state doesn't change often: the performances are fine, and we don't need
     // a virtual DOM for this.)
     let html = `
-      <div class="tooter tooter--${state.step}" ${state.enabled ? '' : 'disabled'}>
-        <label class="tooter__crosspost">
-          <input class="tooter__crosspost-checkbox" name="tooter-crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''}>
-          <span class="tooter__label-text">
+      <div class="birdsite birdsite--${state.step}" ${state.enabled ? '' : 'disabled'}>
+        <label class="birdsite__crosspost">
+          <input class="birdsite__crosspost-checkbox" name="birdsite-crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''}>
+          <span class="birdsite__label-text">
             ${state.labelText}
           </span>
         </label>
-        <a class="tooter__identity"
+        <a class="birdsite__identity"
            href="#"
            style="visibility: ${state.identityVisible ? 'visible' : 'hidden'};"
            title="Click to logout from the bird site">
@@ -101,13 +101,13 @@ class BirdSiteUI {
       </div>`;
 
     let form = this.composeForm;
-    let rootElement = form.querySelector('.tooter');
+    let rootElement = form.querySelector('.birdsite');
     if (rootElement) {
       form.removeChild(rootElement);
     }
     form.insertAdjacentHTML('beforeend', html);
-    form.querySelector('.tooter__crosspost-checkbox').addEventListener('change', this._checkboxChanged.bind(this));
-    form.querySelector('.tooter__identity').addEventListener('click', this._logoutClicked.bind(this));
+    form.querySelector('.birdsite__crosspost-checkbox').addEventListener('change', this._checkboxChanged.bind(this));
+    form.querySelector('.birdsite__identity').addEventListener('click', this._logoutClicked.bind(this));
   }
 
   _checkboxChanged(event) {
@@ -116,7 +116,7 @@ class BirdSiteUI {
   }
 
   _tootButtonClicked() {
-    let checkbox = document.querySelector('.compose-form .tooter__crosspost-checkbox');
+    let checkbox = document.querySelector('.compose-form .birdsite__crosspost-checkbox');
     if (checkbox.checked) {
       let textarea = document.querySelector('.compose-form textarea');
       let toot = textarea.value;
