@@ -52,7 +52,9 @@ class BirdSiteStore {
 detect();
 
 function detect() {
-  // Discard non-mastodon web app early
+  // Normally this script is injected by the background extension script only
+  // if the page runs the Mastodon web app.
+  // But another check never hurts.
   let mastodonWebAppRoot = document.querySelector('.app-holder#mastodon');
   if (!mastodonWebAppRoot) {
     return;

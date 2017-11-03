@@ -11,14 +11,8 @@
   },
   "content_scripts": [
     {
-      "matches": [ "https://*" ],
-      "js": [
-        "js/lib/oAuth.js",
-        "js/lib/sha1.js",
-        "js/lib/twitter.js",
-        "js/mastodon/birdsite_ui.js",
-        "js/mastodon/birdsite.js"
-      ],
+      "matches": [ "https://*/*" ],
+      "js": [ "js/content_scripts/bootstrap.js" ],
       "run_at": "document_end",
       "all_frames": false
     },
@@ -27,12 +21,12 @@
       "js": [ "js/callback_page.js" ],
       "run_at": "document_start",
       "all_frames": false
-    },
+    }
   ],
   "background": {
     "scripts": [
-      "js/lib/oAuth.js",
       "js/lib/sha1.js",
+      "js/lib/oauth.js",
       "js/lib/twitter.js",
       "js/background_page.js"
     ],
@@ -41,7 +35,8 @@
   "permissions": [
     "tabs",
     "storage",
-    "https://api.twitter.com/*"
+    "https://api.twitter.com/*",
+    "https://*/*"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
