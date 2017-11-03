@@ -99,9 +99,9 @@ async function inject() {
   twitterClient = new TwitterClient();
   store = new BirdSiteStore();
   birdSiteUI = new BirdSiteUI(composeForm, {
-    toggle: toggleCheckbox,
-    send:   crossPostToTwitter,
-    logout: logout
+    toggle: toggleCheckboxAction,
+    send:   crossPostToTwitterAction,
+    logout: logoutAction
   });
 
   try {
@@ -117,12 +117,12 @@ async function inject() {
 
 /** Actions */
 
-function toggleCheckbox(checked) {
+function toggleCheckboxAction(checked) {
   store.toggleChecked(checked);
   birdSiteUI.render(store.state);
 }
 
-async function crossPostToTwitter(message) {
+async function crossPostToTwitterAction(message) {
   try {
     try {
       await twitterClient.loadCredentials();
@@ -152,7 +152,7 @@ async function crossPostToTwitter(message) {
   }
 }
 
-function logout() {
+function logoutAction() {
   twitterClient.logout();
   store.transitionToSignedOut();
   birdSiteUI.render(store.state);
