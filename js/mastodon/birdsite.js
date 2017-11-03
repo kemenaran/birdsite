@@ -70,11 +70,8 @@ function detect() {
     // added to a root div when the compose form gains focus.
     //
     // See https://stackoverflow.com/questions/31659567/performance-of-mutationobserver-to-detect-nodes-in-entire-dom
-    
-    debugMessage('Mastodon web root detected: setting up a mutation observer.');
     let uiContainer = mastodonWebAppRoot.querySelector('div.ui');
     let observer = new MutationObserver(function (/* mutations */) {
-      debugMessage('Mutation observed: detecting ".ui.is-composing".');
       let isComposeFormFocused = uiContainer.classList.contains('is-composing');
       if (isComposeFormFocused) {
         inject();
@@ -89,7 +86,7 @@ function detect() {
 }
 
 async function inject() {
-  debugMessage('Compose form detected: loading extension');
+  console.debug('Mastodon compose form detected: loading BirdSite extension UI');
   let composeForm = document.querySelector('div#mastodon .compose-form');
   if (!composeForm) {
     console.warning('Couldn’t setup BirdSite extension for Mastodon web app: the compose form was not found.');
@@ -156,11 +153,4 @@ function logoutAction() {
   twitterClient.logout();
   store.transitionToSignedOut();
   birdSiteUI.render(store.state);
-}
-
-function debugMessage(message) {
-  let debugEnabled = false; // set to true to enable debugging
-  if (debugEnabled) {
-    console.debug(message);
-  }
 }
