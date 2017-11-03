@@ -2,23 +2,69 @@
   padding: 7px 0;
 }
 
-.birdsite--success::after {
-  content: '✅';
-  display: inline-block;
-  vertical-align: middle;
-}
-.birdsite--error::after {
-  content: '🤔';
-  display: inline-block;
-  vertical-align: middle;
+.birdsite__identity {
+  display: inline-block;  
 }
 
 .birdsite__username {
   color: white;
   opacity: 0.6;
   text-decoration:none;
+  cursor: pointer;
 }
 .birdsite__username:hover {
   opacity: 1.0;
   text-decoration: underline;
+}
+
+.birdsite__status--authenticating::after,
+.birdsite__status--posting::after {
+  content: '...';
+  display: inline-block;
+  animation: 1s loading linear forwards infinite;
+}
+.birdsite__status--success::after {
+  content: '✅';
+  display: inline-block;
+  vertical-align: middle;
+  animation: 0.2s popIn ease-in forwards;
+}
+.birdsite__status--error::after {
+  content: '🤔';
+  display: inline-block;
+  vertical-align: middle;
+  animation: 0.2s popIn ease-in forwards;
+}
+
+@keyframes loading {
+  0% {
+    content: '';
+  }
+  35% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  90% {
+    content: '...';
+  }
+  100% {
+    content: '...';
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7, 0.7);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.2, 1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
 }

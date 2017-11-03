@@ -51,7 +51,7 @@ class BirdSiteUI {
         state.enabled = true;
         break;
       case UIState.AUTHENTICATING:
-        state.labelText = "Authenticating…";
+        state.labelText = "Authenticating";
         state.identityVisible = false;
         state.enabled = false;
         break;
@@ -61,7 +61,7 @@ class BirdSiteUI {
         state.enabled = true;
         break;
       case UIState.POSTING:
-        state.labelText = "Post on the bird site…";
+        state.labelText = "Post on the bird site";
         state.identityVisible = true;
         state.enabled = false;
         break;
@@ -85,22 +85,20 @@ class BirdSiteUI {
     // and the state doesn't change often: the performances are fine, and we don't need
     // a virtual DOM for this.)
     let html = `
-      <div class="birdsite birdsite--${state.step}" ${state.enabled ? '' : 'disabled'}>
+      <div class="birdsite" ${state.enabled ? '' : 'disabled'}>
         <label class="birdsite__crosspost">
           <input class="birdsite__crosspost-checkbox" name="birdsite-crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''}>
           <span class="birdsite__label-text">
             ${state.labelText}
           </span>
         </label>
-        <span class="birdsite__identity">
+        <span class="birdsite__identity" style="display: ${state.identityVisible ? 'initial' : 'none'};">
           as
-          <a class="birdsite__username"
-             href="#"
-             style="visibility: ${state.identityVisible ? 'visible' : 'hidden'};"
-             title="Click to logout from the bird site">
-              @${state.username}
+          <a class="birdsite__username" title="Click to logout from the bird site">
+            @${state.username}
           </a>
         </span>
+        <span class="birdsite__status birdsite__status--${state.step}"></span>
       </div>`;
 
     let form = this.composeForm;
