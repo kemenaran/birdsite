@@ -11,12 +11,7 @@
   },
   "content_scripts": [
     {
-      "matches": [ "https://joinmastodon.org/*" ],
-      "js": [ "js/callback_page.js" ],
-      "run_at": "document_start"
-    },
-    {
-      "matches": [ "https://*/*" ],
+      "matches": [ "https://*" ],
       "js": [
         "js/lib/oAuth.js",
         "js/lib/sha1.js",
@@ -26,7 +21,13 @@
       ],
       "run_at": "document_end",
       "all_frames": false
-    }
+    },
+    {
+      "matches": [ "https://joinmastodon.org/*" ],
+      "js": [ "js/callback_page.js" ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
   ],
   "background": {
     "scripts": [
@@ -40,8 +41,7 @@
   "permissions": [
     "tabs",
     "storage",
-    "https://api.twitter.com/*",
-    "https://*/"
+    "https://api.twitter.com/*"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
