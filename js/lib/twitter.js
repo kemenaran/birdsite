@@ -9,28 +9,20 @@ class TwitterClient {
     this.api_url         = TWITTER_API_URL;
     this.consumer_key    = TWITTER_CONSUMER_KEY;
     this.consumer_secret = TWITTER_CONSUMER_SECRET;
-
-    this.oauth_token = null;
-    this.oauth_token_secret = null;
-    this.screen_name = null;
+    this.credentials = new TwitterCredentials();
 
     this.resolveAuthentication = null;
     this.rejectAuthentication = null;
   }
 
-  // Load saved Twitter credentials.
-  // Returns a promise that will be resolved with the credentials if found,
+  // Initialize the client by loading saved Twitter credentials.
+  // Returns a promise that will be resolved with the Twitter username if found,
   // and rejected otherwise.
   loadCredentials() {
-    return this._fetchStoredCredentials()
+    return TwitterCredentials.load()
     .then((credentials) => {
-      let isLoggedIn = credentials.oauth_token && credentials.oauth_token_secret && credentials.screen_name;
-      if (isLoggedIn) {
-        this._setCredentials(credentials);
-        return credentials.screen_name;
-      } else {
-        throw new Error('No Twitter API credentials found');
-      }
+      this.credentials = credentials;
+      return credentials.screen_name;
     });
   }
 
@@ -56,7 +48,8 @@ class TwitterClient {
     this.api('oauth/access_token', 'POST', params)
     .then(response => response.text())
     .then((responseText) => {
-      return this._setCredentials(this._deparam(responseText));
+      this.credentials = new TwitterCredentials(this._deparam(responseText));
+      return this.credentials.save();
     })
     .then(() => {
       this._sendMessageToContentPage({ authState: 'success' });
@@ -86,12 +79,12 @@ class TwitterClient {
     }
 
     /* Add an oauth token if it is an api request */
-    params.oauth_token = params.oauth_token || this.oauth_token;
+    params.oauth_token = params.oauth_token || this.credentials.oauth_token;
 
     /* Add a 1.1 and .json if its not an authentication request */
     (!path.match(/oauth/)) && (path = '1.1/' + path + '.json');
 
-    var accessor = {consumerSecret: this.consumer_secret, tokenSecret: this.oauth_token_secret},
+    var accessor = {consumerSecret: this.consumer_secret, tokenSecret: this.credentials.oauth_token_secret},
       message = {
         action: this.api_url + path,
         method: method,
@@ -121,54 +114,16 @@ class TwitterClient {
   }
 
   // Clear user credentials.
+  // Returns a promise that will resolve then the credentials have been removed from the persistent store
   logout() {
-    this._clearCredentials();
+    return this._clearCredentials();
   }
 
   /* Private methods */
 
-  // Retrieve one or several values in the extension local storage.
-  // Returns a promise that will resolve when done.
-  _chromeLocalStorageGet(keys) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.get(keys, (results) => {
-        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
-        else { resolve(results); }
-      });
-    });
-  }
-
-  // Store an object in the extension local storage.
-  // Returns a promise that will resolve when done.
-  _chromeLocalStorageSet(items) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.set(items, () => {
-        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
-        else { resolve(); }
-      });
-    });
-  }
-
-  _setCredentials(credentials) {
-    this.oauth_token        = credentials.oauth_token;
-    this.oauth_token_secret = credentials.oauth_token_secret;
-    this.screen_name        = credentials.screen_name;
-    return this._chromeLocalStorageSet({
-      'oauth_token':        credentials.oauth_token,
-      'oauth_token_secret': credentials.oauth_token_secret,
-      'screen_name':        credentials.screen_name
-    });
-  }
-
-  _fetchStoredCredentials() {
-    return this._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name']);
-  }
-
   _clearCredentials() {
-    this.oauth_token        = null;
-    this.oauth_token_secret = null;
-    this.screen_name        = null;
-    chrome.storage.local.remove(['oauth_token', 'oauth_token_secret', 'screen_name']);
+    this.credentials = new TwitterCredentials();
+    return this.credentials.save();
   }
 
   // Convert a query string into an key-value object
@@ -182,20 +137,14 @@ class TwitterClient {
   }
 
   _startAuthentication() {
-    this._clearCredentials();
-
-    return this.api('oauth/request_token', 'POST')
+    return this._clearCredentials()
+    .then(() => this.api('oauth/request_token', 'POST'))
     .then(response => response.text())
     .then((responseText) => {
-      // Extract request tokens
-      var params = this._deparam(responseText);
-      this._setCredentials({
-        'oauth_token':        params.oauth_token,
-        'oauth_token_secret': params.oauth_token_secret,
-        'screen_name':        'foo' // FIXME
-      });
+      // Extract request token
+      let credentials = new TwitterCredentials(this._deparam(responseText));
       // Open a pop-up window to start the OAuth flow
-      var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + this.oauth_token;
+      var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + credentials.oauth_token;
       window.open(url);
       // Listen for messages sent by the background page
       chrome.runtime.onMessage.addListener(this._didReceiveMessage.bind(this));
@@ -209,9 +158,11 @@ class TwitterClient {
   }
 
   _sendMessageToContentPage(messageObject) {
-    chrome.tabs.query({ currentWindow: true }, function(tabs) {
-      console.debug(`Sending message to tab ${tabs[0].id}`);
-      chrome.tabs.sendMessage(tabs[0].id, messageObject, function() {});
+    chrome.tabs.query({}, function(tabs) {
+      for (let tab of tabs) {
+        console.debug(`Sending message to tab ${tab.id}`);
+        chrome.tabs.sendMessage(tab.id, messageObject, function() {});
+      }
     });
   }
 
@@ -232,5 +183,57 @@ class TwitterClient {
       this.resolveAuthentication = null;
       this.rejectAuthentication = null;
     }
+  }
+}
+
+// Represents, save and retrieve Twitter user credentials from local storage.
+// For internal use only.
+class TwitterCredentials {
+  constructor(credentials) {
+    credentials = credentials || {};
+
+    this.oauth_token = credentials.oauth_token || null;
+    this.oauth_token_secret = credentials.oauth_token_secret || null;
+    this.screen_name = credentials.screen_name || null;
+  }
+
+  static load() {
+    return TwitterCredentials._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name'])
+    .then((result) => {
+      let isValid = result.oauth_token && result.oauth_token_secret && result.screen_name;
+      if (isValid) {
+        return new TwitterCredentials(result);
+      } else {
+        throw new Error('No valid Twitter credentials found in local storage');
+      }
+    });
+  }
+
+  save() {
+    return TwitterCredentials._chromeLocalStorageSet({
+      oauth_token:        this.oauth_token,
+      oauth_token_secret: this.oauth_token_secret,
+      screen_name:        this.screen_name
+    });
+  }
+
+  // Promise wrapper for chrome.storage.local.get
+  static _chromeLocalStorageGet(keys) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(keys, (results) => {
+        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
+        else { resolve(results); }
+      });
+    });
+  }
+
+  // Promise wrapper for chrome.storage.local.set
+  static _chromeLocalStorageSet(items) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.set(items, () => {
+        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
+        else { resolve(); }
+      });
+    });
   }
 }
