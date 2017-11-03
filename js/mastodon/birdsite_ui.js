@@ -72,7 +72,7 @@ class BirdSiteUI {
         break;
       case UIState.FAILURE:
         state.labelText = "An error occured while posting to the bird site";
-        state.identityVisible = true;
+        state.identityVisible = false;
         state.enabled = true;
         break;
       default:

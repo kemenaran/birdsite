@@ -18,22 +18,36 @@ class TwitterClient {
   // Initialize the client by loading saved Twitter credentials.
   // Returns a promise that will be resolved with the Twitter username if found,
   // and rejected otherwise.
-  loadCredentials() {
-    return TwitterCredentials.load()
-    .then((credentials) => {
-      this.credentials = credentials;
-      return credentials.screen_name;
-    });
+  async loadCredentials() {
+    let credentials = await TwitterCredentials.load();
+    this.credentials = credentials;
+    return credentials.screen_name;
   }
 
-  // Ensure the user is authenticated.
-  // If yes, quickly returns a resolved Promise.
-  // If no, start the OAuth flow, and return a promise that will resolve at the end of the flow.
-  authenticate() {
-    return this.loadCredentials()
-    .catch(() => {
-      return this._startAuthentication();
+  // Start the OAuth flow, and return a promise that will resolve at the end of the flow.
+  async authenticate() {
+    await this._clearCredentials();
+
+    let response = await this.api('oauth/request_token', 'POST'),
+        responseText = await response.text(),
+        responseParams = this._deparam(responseText);
+
+    // Extract request token
+    let credentials = new TwitterCredentials(responseParams);
+
+    // Open a pop-up window to start the OAuth flow
+    var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + credentials.oauth_token;
+    window.open(url);
+
+    // Listen for messages sent by the background page
+    chrome.runtime.onMessage.addListener(this._didReceiveMessage.bind(this));
+
+    // Return a promise that will be resolved (or rejected) when the callback URL is called
+    let oauthPromise = new Promise((resolve, reject) => {
+      this.resolveAuthentication = resolve;
+      this.rejectAuthentication = reject;
     });
+    return oauthPromise;
   }
 
   // Finish the last authentication step, by providing the query parameters
@@ -42,26 +56,26 @@ class TwitterClient {
   // This method is intended to be called from the background extension page.
   // It will send a message to the content page, in order to resolves (or reject)
   // the promise returned by `authenticate`.
-  completeAuthentication(queryParams) {
+  async completeAuthentication(queryParams) {
     var params = this._deparam(queryParams);
 
-    this.api('oauth/access_token', 'POST', params)
-    .then(response => response.text())
-    .then((responseText) => {
-      this.credentials = new TwitterCredentials(this._deparam(responseText));
-      return this.credentials.save();
-    })
-    .then(() => {
+    try {
+      let response = await this.api('oauth/access_token', 'POST', params),
+          responseText = await response.text(),
+          responseParams = this._deparam(responseText);
+
+      this.credentials = new TwitterCredentials(responseParams);
+      await this.credentials.save();
       this._sendMessageToContentPage({ authState: 'success' });
-    })
-    .catch((error) => {
+      
+    } catch(error) {
       this._sendMessageToContentPage({ authState: 'failure', error: error });
-    });
+    }
   }
 
   // Send a request to the Twitter API.
   // Returns a promise that resolves when the request finishes.
-  api(path /*, method, params */) {
+  async api(path /*, method, params */) {
     var args = Array.prototype.slice.call(arguments, 1),
         params = {},
         method = 'GET';
@@ -105,25 +119,30 @@ class TwitterClient {
       requestParams.append(key, value);
     });
 
-    return fetch(this.api_url + path, { method: method, body: requestParams })
-      .catch((response) => {
-        if(res && res.responseText && res.responseText.match(/89/)) {
-          this._startAuthentication();
-        }
-      });
+    try {
+      let response = await fetch(this.api_url + path, { method: method, body: requestParams });
+      return response;
+
+    } catch (response) {
+      if (response && response.responseText && response.responseText.match(/89/)) {
+        await this._startAuthentication();
+      } else {
+        throw response;
+      }
+    }
   }
 
   // Clear user credentials.
   // Returns a promise that will resolve then the credentials have been removed from the persistent store
-  logout() {
-    return this._clearCredentials();
+  async logout() {
+    await this._clearCredentials();
   }
 
   /* Private methods */
 
-  _clearCredentials() {
+  async _clearCredentials() {
     this.credentials = new TwitterCredentials();
-    return this.credentials.save();
+    await this.credentials.save();
   }
 
   // Convert a query string into an key-value object
@@ -136,27 +155,6 @@ class TwitterClient {
     return obj;
   }
 
-  _startAuthentication() {
-    return this._clearCredentials()
-    .then(() => this.api('oauth/request_token', 'POST'))
-    .then(response => response.text())
-    .then((responseText) => {
-      // Extract request token
-      let credentials = new TwitterCredentials(this._deparam(responseText));
-      // Open a pop-up window to start the OAuth flow
-      var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + credentials.oauth_token;
-      window.open(url);
-      // Listen for messages sent by the background page
-      chrome.runtime.onMessage.addListener(this._didReceiveMessage.bind(this));
-      // Return a promise that will be resolved (or rejected) when the callback URL is called
-      let oauthPromise = new Promise((resolve, reject) => {
-        this.resolveAuthentication = resolve;
-        this.rejectAuthentication = reject;
-      });
-      return oauthPromise;
-    });
-  }
-
   _sendMessageToContentPage(messageObject) {
     chrome.tabs.query({}, function(tabs) {
       for (let tab of tabs) {
@@ -166,23 +164,24 @@ class TwitterClient {
     });
   }
 
-  _didReceiveMessage(request, sender, sendResponse) {
+  async _didReceiveMessage(request, sender, sendResponse) {
     console.debug("Received message: " + JSON.stringify(request));
     
     if (request.authState == 'success') {
-      this.loadCredentials()
-      .catch(error => this.rejectAuthentication(error))
-      .then((screen_name) => {
-        this.resolveAuthentication(screen_name);
-        this.resolveAuthentication = null;
-        this.rejectAuthentication = null;
-      });
+      let screen_name;
+      try {
+        screen_name = await this.loadCredentials();
+      } catch (error) {
+        this.rejectAuthentication(error);
+      }
+      this.resolveAuthentication(screen_name);
 
     } else if (request.authState == 'failure') {
       this.rejectAuthentication(request.error);
-      this.resolveAuthentication = null;
-      this.rejectAuthentication = null;
     }
+
+    this.resolveAuthentication = null;
+    this.rejectAuthentication = null;
   }
 }
 
@@ -197,20 +196,18 @@ class TwitterCredentials {
     this.screen_name = credentials.screen_name || null;
   }
 
-  static load() {
-    return TwitterCredentials._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name'])
-    .then((result) => {
-      let isValid = result.oauth_token && result.oauth_token_secret && result.screen_name;
-      if (isValid) {
-        return new TwitterCredentials(result);
-      } else {
-        throw new Error('No valid Twitter credentials found in local storage');
-      }
-    });
+  static async load() {
+    let results = await TwitterCredentials._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name']);
+    let isValid = results.oauth_token && results.oauth_token_secret && results.screen_name;
+    if (isValid) {
+      return new TwitterCredentials(results);
+    } else {
+      throw new Error('No valid Twitter credentials found in local storage');
+    }
   }
 
-  save() {
-    return TwitterCredentials._chromeLocalStorageSet({
+  async save() {
+    await TwitterCredentials._chromeLocalStorageSet({
       oauth_token:        this.oauth_token,
       oauth_token_secret: this.oauth_token_secret,
       screen_name:        this.screen_name
@@ -218,7 +215,7 @@ class TwitterCredentials {
   }
 
   // Promise wrapper for chrome.storage.local.get
-  static _chromeLocalStorageGet(keys) {
+  static async _chromeLocalStorageGet(keys) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get(keys, (results) => {
         if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
@@ -228,7 +225,7 @@ class TwitterCredentials {
   }
 
   // Promise wrapper for chrome.storage.local.set
-  static _chromeLocalStorageSet(items) {
+  static async _chromeLocalStorageSet(items) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.set(items, () => {
         if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }

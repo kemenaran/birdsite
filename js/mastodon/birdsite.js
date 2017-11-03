@@ -88,7 +88,7 @@ function detect() {
   }
 }
 
-function inject() {
+async function inject() {
   debugMessage('Compose form detected: loading extension');
   let composeForm = document.querySelector('div#mastodon .compose-form');
   if (!composeForm) {
@@ -104,15 +104,15 @@ function inject() {
     logout: logout
   });
 
-  twitterClient.loadCredentials()
-  .then((username) => {
+  try {
+    let username = await twitterClient.loadCredentials();
     store.transitionToSignedIn(username);
     birdSiteUI.render(store.state);
-  })
-  .catch(() => {
+
+  } catch (notLoggedIn) {
     store.transitionToSignedOut();
     birdSiteUI.render(store.state);
-  });
+  }
 }
 
 /** Actions */
@@ -122,32 +122,34 @@ function toggleCheckbox(checked) {
   birdSiteUI.render(store.state);
 }
 
-function crossPostToTwitter(message) {
-  twitterClient.loadCredentials()
-  .catch(() => {
-    store.transitionToAuthenticating();
-    birdSiteUI.render(store.state);
-    return twitterClient.authenticate();
-  })
-  .then((username) => {
-    store.transitionToSignedIn(username);
-    birdSiteUI.render(store.state);
-  })
-  .then(() => {
+async function crossPostToTwitter(message) {
+  try {
+    try {
+      await twitterClient.loadCredentials();
+    } catch (notLoggedIn) {
+      store.transitionToAuthenticating();
+      birdSiteUI.render(store.state);
+      
+      let username = await twitterClient.authenticate();
+
+      store.transitionToSignedIn(username);
+      birdSiteUI.render(store.state);
+    }
+
     store.transitionToPosting();
     birdSiteUI.render(store.state);
+
     let params = { status: message };
-    return twitterClient.api('statuses/update', 'POST', params);
-  })
-  .then(() => {
+    await twitterClient.api('statuses/update', 'POST', params);
     store.transitionToSuccess();
     birdSiteUI.render(store.state);
-  })
-  .catch((error) => {
+
+  } catch (error) {
     store.transitionToFailure();
     birdSiteUI.render(store.state);
+    console.error(error);
     alert('An error occured while posting to the bird site: ' + error);
-  });
+  }
 }
 
 function logout() {
