@@ -1,0 +1,24 @@
+.birdsite {
+  padding: 7px 0;
+}
+
+.birdsite--success::after {
+  content: '✅';
+  display: inline-block;
+  vertical-align: middle;
+}
+.birdsite--error::after {
+  content: '🤔';
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.birdsite__username {
+  color: white;
+  opacity: 0.6;
+  text-decoration:none;
+}
+.birdsite__username:hover {
+  opacity: 1.0;
+  text-decoration: underline;
+}

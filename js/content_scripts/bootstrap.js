@@ -10,7 +10,7 @@
 
 let mastodonWebAppRoot = document.querySelector('.app-holder#mastodon');
 if (mastodonWebAppRoot) {
-  chrome.runtime.sendMessage({ type: 'inject_content_script' }, function() {});
+  chrome.runtime.sendMessage({ type: 'inject_content_scripts' }, function() {});
 } else {
   // No Mastodon web app detected: do nothing.
 }

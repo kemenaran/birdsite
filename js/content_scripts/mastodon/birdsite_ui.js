@@ -92,12 +92,15 @@ class BirdSiteUI {
             ${state.labelText}
           </span>
         </label>
-        <a class="birdsite__identity"
-           href="#"
-           style="visibility: ${state.identityVisible ? 'visible' : 'hidden'};"
-           title="Click to logout from the bird site">
-            (@${state.username})
-        </a>
+        <span class="birdsite__identity">
+          as
+          <a class="birdsite__username"
+             href="#"
+             style="visibility: ${state.identityVisible ? 'visible' : 'hidden'};"
+             title="Click to logout from the bird site">
+              @${state.username}
+          </a>
+        </span>
       </div>`;
 
     let form = this.composeForm;
