@@ -4,6 +4,16 @@ const TWITTER_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4
 
 // Manage the authentication flow and authenticated requests
 // against the Twitter API.
+//
+// Usage:
+//   let client = new TwitterClient();
+//   client.loadCredentials()
+//   .catch((notLoggedIn) => {
+//     return client.authenticate();
+//   })
+//   .then((username) => {
+//     return client.api('statuses/update', 'POST', { message: 'Toot!' });
+//   });
 class TwitterClient {
   constructor() {
     this.api_url         = TWITTER_API_URL;
