@@ -42,7 +42,7 @@ class BirdSiteStore {
   toggleChecked(isChecked) {
     this.state.checked = !!isChecked;
     if (this.state.uiState == UIState.SUCCESS || this.state.uiState == UIState.FAILURE) {
-      this.transitionToSignedIn(this.store.username);
+      this.transitionToSignedIn(this.state.username);
     }
   }
 }
