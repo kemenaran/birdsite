@@ -8,5 +8,7 @@
 // Register a listener for messages sent by callback_page.js
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   sendResponse({});
-  Twitter.completeAuthentication(request.queryParams);
+  
+  let twitterClient = new TwitterClient();
+  twitterClient.completeAuthentication(request.queryParams);
 });

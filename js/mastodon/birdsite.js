@@ -1,4 +1,4 @@
-var birdSiteUI, store;
+var birdSiteUI, store, twitterClient;
 
 class BirdSiteStore {
   constructor() {
@@ -96,14 +96,15 @@ function inject() {
     return;
   }
 
+  twitterClient = new TwitterClient();
+  store = new BirdSiteStore();
   birdSiteUI = new BirdSiteUI(composeForm, {
     toggle: toggleCheckbox,
     send:   crossPostToTwitter,
     logout: logout
   });
-  store = new BirdSiteStore();
 
-  Twitter.loadCredentials()
+  twitterClient.loadCredentials()
   .then((username) => {
     store.transitionToSignedIn(username);
     birdSiteUI.render(store.state);
@@ -122,11 +123,11 @@ function toggleCheckbox(checked) {
 }
 
 function crossPostToTwitter(message) {
-  Twitter.loadCredentials()
+  twitterClient.loadCredentials()
   .catch(() => {
     store.transitionToAuthenticating();
     birdSiteUI.render(store.state);
-    return Twitter.authenticate();
+    return twitterClient.authenticate();
   })
   .then((username) => {
     store.transitionToSignedIn(username);
@@ -136,7 +137,7 @@ function crossPostToTwitter(message) {
     store.transitionToPosting();
     birdSiteUI.render(store.state);
     let params = { status: message };
-    return Twitter.api('statuses/update', 'POST', params);
+    return twitterClient.api('statuses/update', 'POST', params);
   })
   .then(() => {
     store.transitionToSuccess();
@@ -145,12 +146,12 @@ function crossPostToTwitter(message) {
   .catch((error) => {
     store.transitionToFailure();
     birdSiteUI.render(store.state);
-    alert('An error occured while posting to Twitter: ' + error);
+    alert('An error occured while posting to the bird site: ' + error);
   });
 }
 
 function logout() {
-  Twitter.logout();
+  twitterClient.logout();
   store.transitionToSignedOut();
   birdSiteUI.render(store.state);
 }
