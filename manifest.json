@@ -35,7 +35,7 @@
   "permissions": [
     "tabs",
     "storage",
-    "https://api.twitter.com/*"
-  ],
-  "content_security_policy": "script-src 'self'; object-src 'self'"
+    "https://api.twitter.com/*",
+    "https://*/*"
+  ]
 }
