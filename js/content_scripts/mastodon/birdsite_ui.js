@@ -46,32 +46,32 @@ class BirdSiteUI {
 
     switch (state.step) {
       case UIState.SIGNED_OUT:
-        state.labelText = "Post on the bird site";
+        state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
         state.identityVisible = false;
         state.enabled = true;
         break;
       case UIState.AUTHENTICATING:
-        state.labelText = "Authenticating";
+        state.labelText = chrome.i18n.getMessage("authenticating");
         state.identityVisible = false;
         state.enabled = false;
         break;
       case UIState.READY:
-        state.labelText = "Post on the bird site";
+        state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
         state.identityVisible = true;
         state.enabled = true;
         break;
       case UIState.POSTING:
-        state.labelText = "Post on the bird site";
+        state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
         state.identityVisible = true;
         state.enabled = false;
         break;
       case UIState.SUCCESS:
-        state.labelText = "Post on the bird site";
+        state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
         state.identityVisible = true;
         state.enabled = true;
         break;
       case UIState.FAILURE:
-        state.labelText = "An error occured while posting to the bird site";
+        state.labelText = chrome.i18n.getMessage("anErrorOccured");
         state.identityVisible = false;
         state.enabled = true;
         break;
@@ -82,23 +82,22 @@ class BirdSiteUI {
 
     // Render the component
     // (Yes, we do render it from scratch on every change. But the HTML is quite small,
-    // and the state doesn't change often: the performances are fine, and we don't need
+    // and the state doesn't change often: performance is fine, and we don't need
     // a virtual DOM for this.)
     let html = `
-      <div class="birdsite">
-        <label class="birdsite__crosspost">
-          <input class="birdsite__crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''} ${state.enabled ? '' : 'disabled'}>
+      <div class="birdsite birdsite--${state.step}">
+        <input class="birdsite__checkbox" id="birdsite-checkbox" type="checkbox" ${state.checked ? 'checked' : ''} ${state.enabled ? '' : 'disabled'}>
+        <label class="birdsite__label" for="birdsite-checkbox">
           <span class="birdsite__label-text">
             ${state.labelText}
           </span>
+          <span class="birdsite__identity">
+            <a class="birdsite__username" data-username="${state.username}" title="${chrome.i18n.getMessage('clickToLogout')}">
+              @${state.username}  
+            </a>
+          </span>
+          <span class="birdsite__status"></span>
         </label>
-        <span class="birdsite__identity" style="display: ${state.identityVisible ? 'initial' : 'none'};">
-          as
-          <a class="birdsite__username" data-username="${state.username}" title="Click to logout from the bird site">
-            @${state.username}
-          </a>
-        </span>
-        <span class="birdsite__status birdsite__status--${state.step}"></span>
       </div>`;
 
     let form = this.composeForm;
@@ -107,8 +106,8 @@ class BirdSiteUI {
       form.removeChild(rootElement);
     }
     form.insertAdjacentHTML('beforeend', html);
-    form.querySelector('.birdsite__crosspost-checkbox').addEventListener('change', this._checkboxChanged.bind(this));
-    form.querySelector('.birdsite__identity').addEventListener('click', this._logoutClicked.bind(this));
+    form.querySelector('.birdsite__checkbox').addEventListener('change', this._checkboxChanged.bind(this));
+    form.querySelector('.birdsite__username').addEventListener('click', this._logoutClicked.bind(this));
   }
 
   _checkboxChanged(event) {
@@ -117,7 +116,7 @@ class BirdSiteUI {
   }
 
   _tootButtonClicked() {
-    let checkbox = document.querySelector('.compose-form .birdsite__crosspost-checkbox');
+    let checkbox = document.querySelector('.compose-form .birdsite__checkbox');
     if (checkbox.checked) {
       let textarea = document.querySelector('.compose-form textarea');
       let toot = textarea.value;
@@ -128,10 +127,11 @@ class BirdSiteUI {
   }
 
   _logoutClicked(event) {
-    let checkbox = event.target,
-        username = checkbox.getAttribute('data-username');
-    if (window.confirm(`Do you want to disconnect from the @${username} bird site account?`)) {
+    let logoutLink = event.target,
+        username = logoutLink.getAttribute('data-username');
+    if (window.confirm(chrome.i18n.getMessage('confirmLogout', username))) {
       this.actions.logout();
     }
+    event.preventDefault();
   }
 }

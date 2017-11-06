@@ -1,44 +1,57 @@
 .birdsite {
+  display: block;
   padding: 7px 0;
 }
 
-.birdsite__crosspost-checkbox {
+.birdsite__checkbox {
+  display: block;
+  float: left;
   margin-left: 0px;
 }
 
+.birdsite__label {
+  display: block;
+  margin-left: 18px;
+}
+
 .birdsite__identity {
-  display: inline-block;  
+  display: none;
+  margin-right: -5px;
+}
+.birdsite--ready:hover .birdsite__identity {
+  display: inline-block;
 }
 
 .birdsite__username {
   color: white;
-  opacity: 0.6;
-  text-decoration:none;
-  cursor: pointer;
+  opacity: 0.5;
 }
 .birdsite__username:hover {
   opacity: 1.0;
   text-decoration: underline;
+  cursor:pointer;
 }
+
+/* Status icons ************************************/
 
 .birdsite__status {
   /* allow the status indicator icon to overlap the container margin */
   margin-right: -3px;
 }
-.birdsite__status--authenticating::after,
-.birdsite__status--posting::after {
+.birdsite--authenticating .birdsite__status::after,
+.birdsite--posting .birdsite__status::after {
   content: '...';
   display: inline-block;
   animation: 1s loading linear forwards infinite;
 }
-.birdsite__status--success::after {
-  content: '✅';
+.birdsite--success .birdsite__status::after {
+  content: '✓';
   display: inline-block;
   vertical-align: middle;
   margin-left: 2px;
-  animation: 0.2s popIn ease-out forwards, 0.25s fadeOut 4s forwards;
+  animation: 0.25s popIn ease-out forwards, 0.25s fadeOut 4s forwards;
 }
-.birdsite__status--error::after {
+.birdsite--failure .birdsite__status::after {
   content: '🤔';
   display: inline-block;
   vertical-align: middle;
