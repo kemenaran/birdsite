@@ -40,7 +40,7 @@ class TwitterClient {
 
     let response = await this.api('oauth/request_token', 'POST'),
         responseText = await response.text(),
-        responseParams = this._deparam(responseText);
+        responseParams = this._extractParameters(responseText);
 
     // Extract request token
     let credentials = new TwitterCredentials(responseParams);
@@ -67,12 +67,12 @@ class TwitterClient {
   // It will send a message to the content page, in order to resolves (or reject)
   // the promise returned by `authenticate`.
   async completeAuthentication(queryParams) {
-    var params = this._deparam(queryParams);
+    var params = this._extractParameters(queryParams);
 
     try {
       let response = await this.api('oauth/access_token', 'POST', params),
           responseText = await response.text(),
-          responseParams = this._deparam(responseText);
+          responseParams = this._extractParameters(responseText);
 
       this.credentials = new TwitterCredentials(responseParams);
       await this.credentials.save();
@@ -85,43 +85,31 @@ class TwitterClient {
 
   // Send a request to the Twitter API.
   // Returns a promise that resolves when the request finishes.
-  async api(path /*, method, params */) {
-    var args = Array.prototype.slice.call(arguments, 1),
-        params = {},
-        method = 'GET';
-
-    /* Parse arguments to their appropriate position */
-    for(var i in args) {
-      switch(typeof args[i]) {
-        case 'object':
-          params = args[i];
-        break;
-        case 'string':
-          method = args[i].toUpperCase();
-        break;
-      }
+  async api(path, method = 'GET', params = {}) {
+    // Add full API path (if this is not an authentication request)
+    if (!path.match(/oauth/)) {
+      path = '1.1/' + path + '.json';
     }
 
-    /* Add an oauth token if it is an api request */
+    // Add OAuth token from the credentials (if missing from the explicitely provided params)
     params.oauth_token = params.oauth_token || this.credentials.oauth_token;
-
-    /* Add a 1.1 and .json if its not an authentication request */
-    (!path.match(/oauth/)) && (path = '1.1/' + path + '.json');
-
-    var accessor = {consumerSecret: this.consumer_secret, tokenSecret: this.credentials.oauth_token_secret},
-      message = {
-        action: this.api_url + path,
-        method: method,
-        parameters: [['oauth_consumer_key', this.consumer_key], ['oauth_signature_method', 'HMAC-SHA1']]
-      };
+    
+    // Feed the parameters into the OAuth helper
+    let accessor = {consumerSecret: this.consumer_secret, tokenSecret: this.credentials.oauth_token_secret};
+    let message = {
+          action: this.api_url + path,
+          method: method,
+          parameters: [['oauth_consumer_key', this.consumer_key], ['oauth_signature_method', 'HMAC-SHA1']]
+        };
 
     Object.entries(params).forEach(([key, value]) => {
       OAuth.setParameter(message, key, value);
     });
-
     OAuth.completeRequest(message, accessor);
 
-    var requestParams = new URLSearchParams();
+    // Retrieve properly formatted parameters suitable for inclusion in the HTTP request
+    // from the OAuth helper
+    let requestParams = new URLSearchParams();
     Object.entries(OAuth.getParameterMap(message.parameters)).forEach(([key, value]) => {
       if (value == null) {
         value = '';
@@ -129,6 +117,7 @@ class TwitterClient {
       requestParams.append(key, value);
     });
 
+    // Send request
     try {
       let response = await fetch(this.api_url + path, { method: method, body: requestParams });
       return response;
@@ -156,13 +145,13 @@ class TwitterClient {
   }
 
   // Convert a query string into an key-value object
-  _deparam(responseText) {
-    let obj = {};
+  _extractParameters(responseText) {
+    let result = {};
     responseText.split('&').forEach((param) => {
       let pair = param.split('=');
-      obj[pair[0]] = pair[1];
+      result[pair[0]] = pair[1];
     });
-    return obj;
+    return result;
   }
 
   _sendMessageToContentPage(messageObject) {
