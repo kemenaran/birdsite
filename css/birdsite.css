@@ -2,6 +2,10 @@
   padding: 7px 0;
 }
 
+.birdsite__crosspost-checkbox {
+  margin-left: 0px;
+}
+
 .birdsite__identity {
   display: inline-block;  
 }
@@ -17,6 +21,10 @@
   text-decoration: underline;
 }
 
+.birdsite__status {
+  /* allow the status indicator icon to overlap the container margin */
+  margin-right: -3px;
+}
 .birdsite__status--authenticating::after,
 .birdsite__status--posting::after {
   content: '...';
@@ -27,14 +35,17 @@
   content: '✅';
   display: inline-block;
   vertical-align: middle;
-  animation: 0.2s popIn ease-in forwards;
+  margin-left: 2px;
+  animation: 0.2s popIn ease-out forwards, 0.25s fadeOut 4s forwards;
 }
 .birdsite__status--error::after {
   content: '🤔';
   display: inline-block;
   vertical-align: middle;
-  animation: 0.2s popIn ease-in forwards;
+  animation: 0.2s popIn ease-out forwards;
 }
+
+/* Animations ***************************************/
 
 @keyframes loading {
   0% {
@@ -61,10 +72,19 @@
   }
   70% {
     opacity: 1;
-    transform: scale(1.2, 1.2);
+    transform: scale(1.4, 1.4);
   }
   100% {
     opacity: 1;
     transform: scale(1, 1);
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
