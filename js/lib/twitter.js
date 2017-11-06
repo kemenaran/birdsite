@@ -207,7 +207,7 @@ class TwitterCredentials {
   }
 
   static async load() {
-    let results = await TwitterCredentials._chromeLocalStorageGet(['oauth_token', 'oauth_token_secret', 'screen_name']);
+    let results = await _toPromise(chrome.storage.local.get)(['oauth_token', 'oauth_token_secret', 'screen_name']);
     let isValid = results.oauth_token && results.oauth_token_secret && results.screen_name;
     if (isValid) {
       return new TwitterCredentials(results);
@@ -217,30 +217,25 @@ class TwitterCredentials {
   }
 
   async save() {
-    await TwitterCredentials._chromeLocalStorageSet({
+    await _toPromise(chrome.storage.local.set)({
       oauth_token:        this.oauth_token,
       oauth_token_secret: this.oauth_token_secret,
       screen_name:        this.screen_name
     });
   }
+}
 
-  // Promise wrapper for chrome.storage.local.get
-  static async _chromeLocalStorageGet(keys) {
+// Helper: takes a function that normally uses a callback as the last argument,
+// and returns a function which returns a Promise instead.
+function _toPromise(fn) {
+  return function(...args) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get(keys, (results) => {
-        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
-        else { resolve(results); }
-      });
+      try {
+        fn(...args, function(...res) {
+          if (chrome.runtime.lastError) { throw chrome.runtime.lastError; }
+          else { resolve(...res); }
+        });
+      } catch(e) { reject(e); }
     });
-  }
-
-  // Promise wrapper for chrome.storage.local.set
-  static async _chromeLocalStorageSet(items) {
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.set(items, () => {
-        if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); }
-        else { resolve(); }
-      });
-    });
-  }
+  };
 }
