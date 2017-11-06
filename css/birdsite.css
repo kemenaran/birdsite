@@ -49,7 +49,7 @@
   display: inline-block;
   vertical-align: middle;
   margin-left: 2px;
-  animation: 0.25s popIn ease-out forwards, 0.25s fadeOut 4s forwards;
+  animation: 0.25s popIn ease-out forwards, 0.25s fadeOut 10s forwards;
 }
 .birdsite--failure .birdsite__status::after {
   content: '🤔';
