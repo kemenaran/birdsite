@@ -27,7 +27,7 @@
     "scripts": [
       "js/lib/sha1.js",
       "js/lib/oauth.js",
-      "js/lib/twitter.js",
+      "js/lib/twitter_client.js",
       "js/background_page.js"
     ],
     "persistent": false
@@ -35,8 +35,7 @@
   "permissions": [
     "tabs",
     "storage",
-    "https://api.twitter.com/*",
-    "https://*/*"
+    "https://api.twitter.com/*"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
