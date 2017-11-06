@@ -94,7 +94,7 @@ class BirdSiteUI {
         </label>
         <span class="birdsite__identity" style="display: ${state.identityVisible ? 'initial' : 'none'};">
           as
-          <a class="birdsite__username" title="Click to logout from the bird site">
+          <a class="birdsite__username" data-username="${state.username}" title="Click to logout from the bird site">
             @${state.username}
           </a>
         </span>
@@ -127,7 +127,11 @@ class BirdSiteUI {
     }
   }
 
-  _logoutClicked() {
-    this.actions.logout();
+  _logoutClicked(event) {
+    let checkbox = event.target,
+        username = checkbox.getAttribute('data-username');
+    if (window.confirm(`Do you want to disconnect from the @${username} bird site account?`)) {
+      this.actions.logout();
+    }
   }
 }
