@@ -68,7 +68,7 @@ class BirdSiteUI {
       case UIState.SUCCESS:
         state.labelText = "Post on the bird site";
         state.identityVisible = true;
-        state.enabled = false;
+        state.enabled = true;
         break;
       case UIState.FAILURE:
         state.labelText = "An error occured while posting to the bird site";
@@ -85,9 +85,9 @@ class BirdSiteUI {
     // and the state doesn't change often: the performances are fine, and we don't need
     // a virtual DOM for this.)
     let html = `
-      <div class="birdsite" ${state.enabled ? '' : 'disabled'}>
+      <div class="birdsite">
         <label class="birdsite__crosspost">
-          <input class="birdsite__crosspost-checkbox" name="birdsite-crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''}>
+          <input class="birdsite__crosspost-checkbox" type="checkbox" ${state.checked ? 'checked' : ''} ${state.enabled ? '' : 'disabled'}>
           <span class="birdsite__label-text">
             ${state.labelText}
           </span>
