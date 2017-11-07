@@ -57,6 +57,7 @@ function detect() {
   // But another check never hurts.
   let mastodonWebAppRoot = document.querySelector('.app-holder#mastodon');
   if (!mastodonWebAppRoot) {
+    console.warn('BirdSite: Mastodon web app was initially detected, but cannot be found after script injection. Aborting.');
     return;
   }
 
@@ -91,7 +92,7 @@ async function inject() {
   console.debug('Mastodon compose form detected: loading BirdSite extension UI');
   let composeForm = document.querySelector('div#mastodon .compose-form');
   if (!composeForm) {
-    console.warning('Couldn’t setup BirdSite extension for Mastodon web app: the compose form was not found.');
+    console.warning('BirdSite: couldn’t inject the UI: Mastodon compose form was not found.');
     return;
   }
 
