@@ -1,4 +1,8 @@
 {
+  "manifestDescription": {
+    "message": "Cross-post Mastodon toots to Twitter.",
+    "description": "Extension description in the manifest file"
+  },
   "authenticating": {
     "message": "Authenticating",
     "description": "Displayed during the authentication process"

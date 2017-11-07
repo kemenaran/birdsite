@@ -1,4 +1,8 @@
 {
+  "manifestDescription": {
+    "message": "Envoyer des pouets sur Twitter depuis Mastodon.",
+    "description": "Extension description in the manifest file"
+  },
   "authenticating": {
     "message": "Connexion en cours",
     "description": "Displayed during the authentication process"
