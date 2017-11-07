@@ -42,7 +42,8 @@
 .birdsite--posting .birdsite__status::after {
   content: '...';
   display: inline-block;
-  animation: 1s loading linear forwards infinite;
+  margin-left: -2px;
+  animation: 1.5s loading linear forwards infinite;
 }
 .birdsite--success .birdsite__status::after {
   content: '✓';
