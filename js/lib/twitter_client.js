@@ -154,6 +154,15 @@ class TwitterClient {
     }
   }
 
+  // Use the Twitter API to post a new tweet.
+  // The text will be truncated to the maximum length if needed.
+  // Usage: twitterClient.postTweet(new Tweet('My status'));
+  async sendTweet(tweet) {
+    return await this.api('statuses/update', 'POST', {
+      status: tweet.truncatedText
+    });
+  }
+
   // Clear user credentials.
   // Returns a promise that will resolve then the credentials have been removed from the persistent store
   async logout() {
@@ -204,6 +213,32 @@ class TwitterClient {
 
     this.resolveAuthentication = null;
     this.rejectAuthentication = null;
+  }
+}
+
+// Represent a tweet to be posted.
+// Uses twitter-text.js (aliased as window.twttr)
+class Tweet {
+  constructor(text) {
+    this.text = text;
+    this.twitterText = window.twttr.txt;
+  }
+
+  get truncatedText() {
+    let text = this.text;
+    const MAX_TWEET_LENGTH = 260;
+
+    if (this.twitterText.getTweetLength(text) <= MAX_TWEET_LENGTH) {
+      return text;
+
+    } else {
+      let suffix = '…',
+          truncatedText = text;
+      for (let length = text.length; this.twitterText.getTweetLength(truncatedText) >= MAX_TWEET_LENGTH; length--) {
+        truncatedText = text.slice(0, length) + suffix;
+      }
+      return truncatedText;
+    }
   }
 }
 

@@ -139,8 +139,12 @@ async function crossPostToTwitterAction(message) {
     store.transitionToPosting();
     birdSiteUI.render(store.state);
 
-    let params = { status: message };
-    await twitterClient.api('statuses/update', 'POST', params);
+    let tweet = new Tweet(message);
+    // if (tweet.needsTruncation) {
+    //   let publicUrl = await mastodon.publicUrlForToot(username, message, { timeout: 10 });
+    //   tweet.externalURL = publicUrl;
+    // }
+    await twitterClient.sendTweet(tweet);
     store.transitionToSuccess();
     birdSiteUI.render(store.state);
 
@@ -148,7 +152,6 @@ async function crossPostToTwitterAction(message) {
     store.transitionToFailure();
     birdSiteUI.render(store.state);
     console.error(error);
-    alert('An error occured while posting to the bird site: ' + error);
   }
 }
 
