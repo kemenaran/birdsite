@@ -4,6 +4,12 @@
   "manifest_version": 2,
   "description": "__MSG_extensionDescription__",
   "homepage_url": "https://github.com/kemenaran/birdsite",
+  "applications": {
+    "gecko": {
+      "id": "birdsite@kemenaran.winosx.com",
+      "strict_min_version": "56.0"
+    }
+  },
   "icons": {
     "16":  "icons/birdsite.svg",
     "48":  "icons/birdsite.svg",
