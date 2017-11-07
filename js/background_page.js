@@ -6,17 +6,23 @@
 // When bootstrap.js detects the Mastodon web app,
 // inject the extension scripts into the Mastodon page.
 async function injectContentScripts(request, sender, response) {
-  // Load order-independant scripts all at once...
-  // (because it is faster than loading them one-by-one)
-  await Promise.all([
-    _toPromise(chrome.tabs.insertCSS)({ file: "/css/birdsite.css", runAt: 'document_start' }),
-    _toPromise(chrome.tabs.executeScript)({ file: "/js/lib/sha1.js", runAt: 'document_start' }),
-    _toPromise(chrome.tabs.executeScript)({ file: "/js/lib/oauth.js", runAt: 'document_start' }),
-    _toPromise(chrome.tabs.executeScript)({ file: "/js/lib/twitter_client.js", runAt: 'document_start' }),
-    _toPromise(chrome.tabs.executeScript)({ file: "/js/content_scripts/mastodon/birdsite_ui.js", runAt: 'document_start' })
-  ]);
-  // ...then load the final script that will run the extension.
-  await _toPromise(chrome.tabs.executeScript)({ file: "/js/content_scripts/mastodon/birdsite.js", runAt: 'document_start' });
+  try {
+    let tabId = sender.tab.id;
+    // Load order-independant scripts all at once...
+    // (because it is faster than loading them one-by-one)
+    await Promise.all([
+      _toPromise(chrome.tabs.insertCSS)(tabId, { file: "/css/birdsite.css", runAt: 'document_end' }),
+      _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/sha1.js", runAt: 'document_end' }),
+      _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/oauth.js", runAt: 'document_end' }),
+      _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/twitter_client.js", runAt: 'document_end' }),
+      _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/content_scripts/mastodon/birdsite_ui.js", runAt: 'document_end' })
+    ]);
+    // ...then load the final script that will run the extension.
+    await _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/content_scripts/mastodon/birdsite.js", runAt: 'document_end' });
+  
+  } catch (error) {
+    console.error('BirdSite: error while injecting scripts: ' + error);
+  }
 }
 
 // When the Twitter authentication pop-up redirects to our callback page,
