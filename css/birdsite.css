@@ -23,13 +23,12 @@
 }
 
 .birdsite__username {
-  color: white;
-  opacity: 0.5;
+  color: #9baec8;
+  opacity: 0.8;
 }
 .birdsite__username:hover {
   opacity: 1.0;
-  text-decoration: underline;
-  cursor:pointer;
+  cursor: pointer;
 }
 
 /* Status icons ************************************/

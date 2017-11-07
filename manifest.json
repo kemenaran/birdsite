@@ -5,9 +5,10 @@
   "description": "A browser extension for cross-posting Mastodon toots to Twitter.",
   "homepage_url": "https://github.com/kemenaran/birdsite",
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16":  "icons/birdsite.svg",
+    "48":  "icons/birdsite.svg",
+    "96":  "icons/birdsite.svg",
+    "128": "icons/birdsite.svg"
   },
   "default_locale": "en",
   "content_scripts": [
