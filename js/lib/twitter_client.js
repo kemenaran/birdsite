@@ -141,17 +141,7 @@ class TwitterClient {
     });
 
     // Send request
-    try {
-      let response = await fetch(this.api_url + path, { method: method, body: requestParams });
-      return response;
-
-    } catch (response) {
-      if (response && response.responseText && response.responseText.match(/89/)) {
-        await this._startAuthentication();
-      } else {
-        throw response;
-      }
-    }
+    return fetch(this.api_url + path, { method: method, body: requestParams });
   }
 
   // Use the Twitter API to post a new tweet.
