@@ -148,9 +148,15 @@ class TwitterClient {
   // The text will be truncated to the maximum length if needed.
   // Usage: twitterClient.postTweet(new Tweet('My status'));
   async sendTweet(tweet) {
-    return await this.api('statuses/update', 'POST', {
+    let response = await this.api('statuses/update', 'POST', {
       status: tweet.truncatedText
     });
+
+    if (response.ok) {
+      return response;
+    } else {
+      throw response;
+    }
   }
 
   // Clear user credentials.
