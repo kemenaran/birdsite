@@ -122,7 +122,7 @@ function toggleCheckboxAction(checked) {
   birdSiteUI.render(store.state);
 }
 
-async function crossPostToTwitterAction(message) {
+async function crossPostToTwitterAction(toot) {
   try {
     try {
       await twitterClient.loadCredentials();
@@ -139,11 +139,12 @@ async function crossPostToTwitterAction(message) {
     store.transitionToPosting();
     birdSiteUI.render(store.state);
 
-    let tweet = new Tweet(message);
-    // if (tweet.needsTruncation) {
-    //   let publicUrl = await mastodon.publicUrlForToot(username, message, { timeout: 10 });
-    //   tweet.externalURL = publicUrl;
-    // }
+    let tweet = new Tweet(toot);
+    if (tweet.needsTruncation()) {
+      let tootUrl = await getPublicUrlForToot(toot);
+      tweet.setExternalUrl(tootUrl);
+    }
+
     await twitterClient.sendTweet(tweet);
     store.transitionToSuccess();
     birdSiteUI.render(store.state);
@@ -153,6 +154,13 @@ async function crossPostToTwitterAction(message) {
     birdSiteUI.render(store.state);
     console.error(error);
   }
+}
+
+async function getPublicUrlForToot(toot) {
+  let mastodonInstance = document.location.hostname,
+      mastodonUsername = document.querySelector('.navigation-bar__profile-account').textContent.replace(/@/, '');
+      mastodonClient = new MastodonClient();
+  return await mastodonClient.publicUrlForToot(mastodonInstance, mastodonUsername, toot);
 }
 
 function logoutAction() {

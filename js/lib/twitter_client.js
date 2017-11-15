@@ -149,7 +149,7 @@ class TwitterClient {
   // Usage: twitterClient.postTweet(new Tweet('My status'));
   async sendTweet(tweet) {
     let response = await this.api('statuses/update', 'POST', {
-      status: tweet.truncatedText
+      status: tweet.truncatedText()
     });
 
     if (response.ok) {
@@ -215,27 +215,43 @@ class TwitterClient {
 // Represent a tweet to be posted.
 // Uses twitter-text.js (aliased as window.twttr)
 class Tweet {
+  get MAX_TWEET_LENGTH() { return 260; }
+
   constructor(text) {
     this.text = text;
+    this.externalUrl = null;
     this.twitterText = window.twttr.txt;
   }
 
-  get truncatedText() {
-    let text = this.text;
-    const MAX_TWEET_LENGTH = 260;
+  // Set an URL to the full content, which will be added if the tweet needs to be truncated.
+  setExternalUrl(url) {
+    this.externalUrl = url;
+  }
 
-    if (this.twitterText.getTweetLength(text) <= MAX_TWEET_LENGTH) {
+  needsTruncation() {
+    return this.twitterText.getTweetLength(this.text) > this.MAX_TWEET_LENGTH;
+  }
+
+  // Truncate the text to a size fitting in a tweet.
+  //
+  // When the text is already short enough, the full text is used.
+  // But when the text needs to be truncated, an external URL to the full content is appended (if provided).
+  truncatedText() {
+    let text = this.text;
+
+    if (! this.needsTruncation()) {
       return text;
 
     } else {
-      let suffix = '…',
+      let suffix = '…' + (this.externalUrl ? ` ${this.externalUrl}` : ''),
           truncatedText = text;
-      for (let length = text.length; this.twitterText.getTweetLength(truncatedText) >= MAX_TWEET_LENGTH; length--) {
+      for (let length = text.length; this.twitterText.getTweetLength(truncatedText) >= this.MAX_TWEET_LENGTH; length--) {
         truncatedText = text.slice(0, length) + suffix;
       }
       return truncatedText;
     }
   }
+
 }
 
 // Represents, save and retrieve Twitter user credentials from local storage.

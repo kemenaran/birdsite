@@ -16,6 +16,7 @@ async function injectContentScripts(request, sender, response) {
       _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/oauth.js", runAt: 'document_end' }),
       _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/twitter-text.js", runAt: 'document_end' }),
       _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/twitter_client.js", runAt: 'document_end' }),
+      _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/lib/mastodon_client.js", runAt: 'document_end' }),
       _toPromise(chrome.tabs.executeScript)(tabId, { file: "/js/content_scripts/mastodon/birdsite_ui.js", runAt: 'document_end' })
     ]);
     // ...then load the final script that will run the extension.
