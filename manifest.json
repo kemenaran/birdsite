@@ -2,7 +2,7 @@
   "name": "BirdSite",
   "version": "1.1",
   "manifest_version": 2,
-  "description": "__MSG_extensionDescription__",
+  "description": "__MSG_manifestDescription__",
   "homepage_url": "https://github.com/kemenaran/birdsite",
   "applications": {
     "gecko": {
