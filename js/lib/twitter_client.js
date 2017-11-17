@@ -22,6 +22,7 @@
  */
 
 const TWITTER_API_URL         = 'https://api.twitter.com/';
+const TWITTER_UPLOAD_URL      = 'https://upload.twitter.com/';
 const TWITTER_CONSUMER_KEY    = '9Y6TkkJkq65aBTi07ozaNYgP7';
 const TWITTER_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4R7w';
 
@@ -38,6 +39,7 @@ const TWITTER_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4
 class TwitterClient {
   constructor() {
     this.api_url         = TWITTER_API_URL;
+    this.upload_url      = TWITTER_UPLOAD_URL;
     this.consumer_key    = TWITTER_CONSUMER_KEY;
     this.consumer_secret = TWITTER_CONSUMER_SECRET;
     this.credentials = new TwitterCredentials();
@@ -112,26 +114,21 @@ class TwitterClient {
   // Send a request to the Twitter API.
   // Returns a promise that resolves when the request finishes.
   async api(path, method = 'GET', params = {}) {
-    // Add full API path (if this is not an authentication request)
+    // Figure out API host
+    let baseUrl = path.match(/upload/) ? this.upload_url : this.api_url;
+    // Adjust API path (if this is not an authentication request)
     if (!path.match(/oauth/)) {
       path = '1.1/' + path + '.json';
     }
 
-    // Add OAuth token from the credentials (if missing from the explicitely provided params)
-    params.oauth_token = params.oauth_token || this.credentials.oauth_token;
-    
     // Feed the parameters into the OAuth helper
-    let accessor = {consumerSecret: this.consumer_secret, tokenSecret: this.credentials.oauth_token_secret};
+    let url = baseUrl + path;
     let message = {
-          action: this.api_url + path,
-          method: method,
-          parameters: [['oauth_consumer_key', this.consumer_key], ['oauth_signature_method', 'HMAC-SHA1']]
-        };
-
-    Object.entries(params).forEach(([key, value]) => {
-      OAuth.setParameter(message, key, value);
-    });
-    OAuth.completeRequest(message, accessor);
+      action:     url,
+      method:     method,
+      parameters: params
+    };
+    OAuth.completeRequest(message, this._defaultOAuthCredentials(this.credentials));
 
     // Retrieve properly formatted parameters suitable for inclusion in the HTTP request
     // from the OAuth helper
@@ -144,21 +141,51 @@ class TwitterClient {
     });
 
     // Send request
-    return fetch(this.api_url + path, { method: method, body: requestParams });
+    return fetch(url, { method: method, body: requestParams });
+  }
+
+  // Send a file upload request to the Twitter API.
+  // Returns a promise that resolves when the request finishes.
+  async uploadMedia(mediaUrl) {
+    // Retrieve the media file from the external URL
+    let mediaFile = await fetch(mediaUrl);
+    let mediaArrayBuffer = await mediaFile.arrayBuffer();
+    let mediaBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(mediaArrayBuffer)));
+    // Send the media blob to Twitter
+    let response = await this.api('media/upload', 'POST', {
+      media_data: mediaBase64
+    });
+
+    if (response.ok) {
+      return response;
+    } else {
+      let responseText = await response.text();
+      throw new Error(`[TwitterClient] media upload failed (${responseText})`);
+    }
   }
 
   // Use the Twitter API to post a new tweet.
   // The text will be truncated to the maximum length if needed.
   // Usage: twitterClient.postTweet(new Tweet('My status'));
   async sendTweet(tweet) {
+    let mediaIds = [];
+    if (tweet.medias.length > 0) {
+      let uploads = tweet.medias.map(media => this.uploadMedia(media.url));
+      let mediaResponses = await Promise.all(uploads);
+      let responsesJson = await Promise.all(mediaResponses.map(response => response.json()));
+      mediaIds = responsesJson.map(responseJson => responseJson['media_id_string']);
+    }
+
     let response = await this.api('statuses/update', 'POST', {
-      status: tweet.truncatedText()
+      status: tweet.truncatedText(),
+      media_ids: mediaIds.join(',')
     });
 
     if (response.ok) {
       return response;
     } else {
-      throw response;
+      let responseText = await response.text();
+      throw new Error(`[TwitterClient] tweet posting failed (${responseText})`);
     }
   }
 
@@ -169,6 +196,19 @@ class TwitterClient {
   }
 
   /* Private methods */
+
+  // Returns an object containing OAuth credentials,
+  // which can be used as the `accessor` argument of `OAuth.completeRequest`.
+  // 
+  // OAuth credentials can still be overriden at the request level.
+  _defaultOAuthCredentials(credentials) {
+    return {
+      consumerKey:    this.consumer_key,
+      consumerSecret: this.consumer_secret,
+      token:          credentials.oauth_token,
+      tokenSecret:    credentials.oauth_token_secret
+    };
+  }
 
   async _clearCredentials() {
     this.credentials = new TwitterCredentials();
@@ -223,12 +263,25 @@ class Tweet {
   constructor(text) {
     this.text = text;
     this.externalUrl = null;
+    this.medias = [];
     this.twitterText = window.twttr.txt;
   }
 
   // Set an URL to the full content, which will be added if the tweet needs to be truncated.
   setExternalUrl(url) {
     this.externalUrl = url;
+  }
+
+  addMedia(url, type) {
+    this.medias.push({ url, type });
+  }
+
+  hasPattern(regexp) {
+    return !!this.text.match();
+  }
+
+  deletePattern(regexp) {
+    this.text = this.text.replace(regexp, '');
   }
 
   needsTruncation() {

@@ -10,22 +10,34 @@ class MastodonClient {
     let parser = new DOMParser();
     let atomDoc = parser.parseFromString(atomFeed, "text/xml");
     let entries = atomDoc.documentElement.querySelectorAll('entry');
-    let statuses = this._mapNodes(entries, entry => ({
-      id:      entry.querySelector('id').textContent.split('/').pop(),
-      url:     entry.querySelector('link[rel=alternate][type="text/html"]').getAttribute('href'),
-      content: entry.querySelector('content').textContent
-    }));
+
+    // Reconstruct objects like the `Status` API entity from the Atom entry
+    let statuses = this._mapNodes(entries, entry => (
+      {
+        id:      entry.querySelector('id').textContent.split('/').pop(),
+        url:     entry.querySelector('link[rel=alternate][type="text/html"]').getAttribute('href'),
+        content: entry.querySelector('content').textContent,
+        media_attachments: this._mapNodes(entry.querySelectorAll('link[rel=enclosure]'), link => (
+          {
+            url:       link.getAttribute('href'),
+            mime_type: link.getAttribute('type')
+          }
+        ))
+      }
+    ));
     return statuses;
   }
 
-  // Retrieve the public URL for a given toot text, by scanning
-  // the public RSS feed for items matching the text.
+  // Retrieve the public status for a given toot text, by scanning
+  // the public Atom feed for items matching the text.
   //
-  // Toots in the RSS feed (or Mastodon API) will be pre-rendered with some
+  // Toots in the Atom feed (or Mastodon API) will be pre-rendered with some
   // HTML, so the function attempts to match toot words one-by-one.
-  async publicUrlForToot(instance, username, toot) {
-    let delay =  2 * 1000; // delay between each attempt (2 seconds by default)
-    let timeout =  60 * 1000; // time before giving up (60 seconds by default)
+  //
+  // Returns a `Status` object with a structure similar to the Mastodon API.
+  async fetchStatusForToot(instance, username, toot) {
+    let delay = 2 * 1000; // delay between each attempt (2 seconds by default)
+    let timeout = 60 * 1000; // time before giving up (60 seconds by default)
 
     let matchingStatus = null;
     let expirationTime = Date.now() + timeout;
@@ -41,7 +53,7 @@ class MastodonClient {
     }
 
     if (matchingStatus) {
-      return matchingStatus.url;
+      return matchingStatus;
     } else {
       throw new Error("Couldn’t find a status for user '${username}' matching '${toot}'");
     }

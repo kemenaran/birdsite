@@ -2,8 +2,12 @@
 class BirdSite {
   constructor() {
     this.twitterClient = new TwitterClient();
+    this.mastodonClient = new MastodonClient();
     this.store = new BirdSiteStore();
-    this.birdSiteUI = null; // will be initialized on injection
+    // Will be initialized on injection
+    this.birdSiteUI = null;
+    this.mastodonInstance = null;
+    this.mastodonUsername = null;
   }
 
   initialize() {
@@ -66,6 +70,9 @@ class BirdSite {
       this.store.transitionToSignedOut();
       this.birdSiteUI.render(this.store.state);
     }
+
+    this.mastodonInstance = document.location.hostname,
+    this.mastodonUsername = document.querySelector('.navigation-bar__profile-account').textContent.replace(/@/, '');
   }
 
   // Actions
@@ -92,9 +99,11 @@ class BirdSite {
       this.birdSiteUI.render(this.store.state);
 
       let tweet = new Tweet(toot);
-      if (tweet.needsTruncation()) {
-        let tootUrl = await this._getPublicUrlForToot(toot);
-        tweet.setExternalUrl(tootUrl);
+      if (tweet.needsTruncation() || tweet.hasPattern(this.mediaUrlRegexp)) {
+        let status = await this.mastodonClient.fetchStatusForToot(this.mastodonInstance, this.mastodonUsername, toot);
+        tweet.setExternalUrl(status['url']);
+        status['media_attachments'].forEach(media_attachment => tweet.addMedia(media_attachment.url));
+        tweet.deletePattern(this.mediaUrlRegexp);
       }
 
       await this.twitterClient.sendTweet(tweet);
@@ -117,15 +126,14 @@ class BirdSite {
 
   // Helpers
 
-  async _getPublicUrlForToot(toot) {
-    let mastodonInstance = document.location.hostname,
-        mastodonUsername = document.querySelector('.navigation-bar__profile-account').textContent.replace(/@/, '');
-        mastodonClient = new MastodonClient();
-    return await mastodonClient.publicUrlForToot(mastodonInstance, mastodonUsername, toot);
+  get mediaUrlRegexp() {
+    let mediaUrl = `[ ]?https://mastodon.xyz/media/[^ ]*`,
+        escapedMediaUrl = mediaUrl.replace(/\//, '\/');
+    return new RegExp(escapedMediaUrl, 'g');
   }
 }
 
-// A state machine for representing the extension state.
+// A state machine for representing the extension UI state.
 class BirdSiteStore {
   constructor() {
     this.state = {
