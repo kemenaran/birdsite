@@ -2,6 +2,12 @@
 
 A browser extension for cross-posting Mastodon toots to Twitter.
 
+## Features
+
+- Cross-post a toot to Twitter right from the Mastodon web app.
+- Attached images are also cross-posted.
+- Toots longer than a tweet are truncated, and a link to the original toot is added.
+
 ## Usage
 
 1. Install the extension for [Firefox](https://addons.mozilla.org/fr/firefox/addon/birdsite/) or Chrome ;
