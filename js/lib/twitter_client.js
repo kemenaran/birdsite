@@ -273,7 +273,7 @@ class Tweet {
   }
 
   hasPattern(regexp) {
-    return !!this.text.match();
+    return !!this.text.match(regexp);
   }
 
   deletePattern(regexp) {
