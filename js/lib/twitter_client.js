@@ -254,7 +254,7 @@ class TwitterClient {
 // Represent a tweet to be posted.
 // Uses twitter-text.js (aliased as window.twttr)
 class Tweet {
-  get MAX_TWEET_LENGTH() { return 260; }
+  get MAX_TWEET_LENGTH() { return 280; }
 
   constructor(text) {
     this.text = text;
