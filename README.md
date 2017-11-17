@@ -4,7 +4,7 @@ A browser extension for cross-posting Mastodon toots to Twitter.
 
 ## Usage
 
-1. Install the extension for Firefox or Chrome ;
+1. Install the extension for [Firefox](https://addons.mozilla.org/fr/firefox/addon/birdsite/) or Chrome ;
 2. Open the web page of your favorite Mastodon instance ;
 3. Type your toot ;
 4. Tick the "Also send to the bird site" checkbox under the toot compose form ;
