@@ -21,27 +21,23 @@
  * SOFTWARE.
  */
 
-const TWITTER_API_URL         = 'https://api.twitter.com/';
-const TWITTER_UPLOAD_URL      = 'https://upload.twitter.com/';
-const TWITTER_CONSUMER_KEY    = '9Y6TkkJkq65aBTi07ozaNYgP7';
-const TWITTER_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4R7w';
+const TWITTER_API_URL    = 'https://api.twitter.com/';
+const TWITTER_UPLOAD_URL = 'https://upload.twitter.com/';
 
 // Manage the authentication flow and authenticated requests
 // against the Twitter API.
 //
 // Usage:
-//   let client = new TwitterClient();
+//   let client = new TwitterClient(<your app consumer key>, <your app secret>);
 //   let username = await client.loadCredentials();
 //   if (!username) {
 //     username = await client.authenticate();
 //   }
 //   await client.sendTweet('Tweet!');
 class TwitterClient {
-  constructor() {
-    this.api_url         = TWITTER_API_URL;
-    this.upload_url      = TWITTER_UPLOAD_URL;
-    this.consumer_key    = TWITTER_CONSUMER_KEY;
-    this.consumer_secret = TWITTER_CONSUMER_SECRET;
+  constructor(consumerKey, consumerSecret) {
+    this.consumer_key    = consumerKey;
+    this.consumer_secret = consumerSecret;
     this.credentials = new TwitterCredentials();
 
     this.resolveAuthentication = null;
@@ -115,7 +111,7 @@ class TwitterClient {
   // Returns a promise that resolves when the request finishes.
   async api(path, method = 'GET', params = {}) {
     // Figure out API host
-    let baseUrl = path.match(/upload/) ? this.upload_url : this.api_url;
+    let baseUrl = path.match(/upload/) ? TWITTER_UPLOAD_URL : TWITTER_API_URL;
     // Adjust API path (if this is not an authentication request)
     if (!path.match(/oauth/)) {
       path = '1.1/' + path + '.json';

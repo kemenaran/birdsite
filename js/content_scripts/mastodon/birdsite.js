@@ -1,7 +1,10 @@
+const TWITTER_BIRDSITE_CONSUMER_KEY    = '9Y6TkkJkq65aBTi07ozaNYgP7';
+const TWITTER_BIRDSITE_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4R7w';
+
 // The main class driving the extension in the Mastodon web app.
 class BirdSite {
   constructor() {
-    this.twitterClient = new TwitterClient();
+    this.twitterClient = new TwitterClient(TWITTER_BIRDSITE_CONSUMER_KEY, TWITTER_BIRDSITE_CONSUMER_SECRET);
     this.mastodonClient = new MastodonClient();
     this.store = new BirdSiteStore();
     // Will be initialized on injection
