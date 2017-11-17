@@ -30,13 +30,11 @@ const TWITTER_CONSUMER_SECRET = 'NhVLcbe4WD2rGUHxRUsdhCvLFIkjqWHqrkFIIYQ0sXV5Zo4
 //
 // Usage:
 //   let client = new TwitterClient();
-//   client.loadCredentials()
-//   .catch((notLoggedIn) => {
-//     return client.authenticate();
-//   })
-//   .then((username) => {
-//     return client.api('statuses/update', 'POST', { message: 'Toot!' });
-//   });
+//   let username = await client.loadCredentials();
+//   if (!username) {
+//     username = await client.authenticate();
+//   }
+//   await client.sendTweet('Tweet!');
 class TwitterClient {
   constructor() {
     this.api_url         = TWITTER_API_URL;
@@ -49,12 +47,17 @@ class TwitterClient {
   }
 
   // Initialize the client by loading saved Twitter credentials.
-  // Returns a promise that will be resolved with the Twitter username if found,
-  // and rejected otherwise.
+  // Returns a promise that will be resolved with the Twitter username if credentials are found,
+  // and `null` otherwise.
   async loadCredentials() {
     let credentials = await TwitterCredentials.load();
-    this.credentials = credentials;
-    return credentials.screen_name;
+    if (credentials) {
+      this.credentials = credentials;
+      return credentials.screen_name;
+
+    } else {
+      return null;
+    }
   }
 
   // Start the OAuth flow, and return a promise that will resolve at the end of the flow.
@@ -271,7 +274,7 @@ class TwitterCredentials {
     if (isValid) {
       return new TwitterCredentials(results);
     } else {
-      throw new Error('No valid Twitter credentials found in local storage');
+      return null;
     }
   }
 

@@ -104,12 +104,12 @@ async function inject() {
     logout: logoutAction
   });
 
-  try {
-    let username = await twitterClient.loadCredentials();
+  let username = await twitterClient.loadCredentials();
+  if (username) {
     store.transitionToSignedIn(username);
     birdSiteUI.render(store.state);
 
-  } catch (notLoggedIn) {
+  } else {
     store.transitionToSignedOut();
     birdSiteUI.render(store.state);
   }
@@ -124,9 +124,8 @@ function toggleCheckboxAction(checked) {
 
 async function crossPostToTwitterAction(toot) {
   try {
-    try {
-      await twitterClient.loadCredentials();
-    } catch (notLoggedIn) {
+    let hasCredentials = await twitterClient.loadCredentials();
+    if (!hasCredentials) {
       store.transitionToAuthenticating();
       birdSiteUI.render(store.state);
       
