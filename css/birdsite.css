@@ -1,6 +1,13 @@
 .birdsite {
   display: block;
   padding: 7px 0;
+  opacity: 0.6;
+}
+.birdsite:hover,
+.birdsite--checked,
+.birdsite--success,
+.birdsite--failure {
+  opacity: 1.0;
 }
 
 .birdsite__checkbox {
@@ -18,7 +25,8 @@
   display: none;
   margin-right: -5px;
 }
-.birdsite--ready:hover .birdsite__identity {
+.birdsite--ready:hover .birdsite__identity,
+.birdsite--ready.birdsite--checked .birdsite__identity {
   display: inline-block;
 }
 

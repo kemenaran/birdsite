@@ -85,7 +85,7 @@ class BirdSiteUI {
     // and the state doesn't change often: performance is fine, and we don't need
     // a virtual DOM for this.)
     let html = `
-      <div class="birdsite birdsite--${state.step}">
+      <div class="birdsite birdsite--${state.step} ${state.checked ? 'birdsite--checked' : ''}">
         <input class="birdsite__checkbox" id="birdsite-checkbox" type="checkbox" ${state.checked ? 'checked' : ''} ${state.enabled ? '' : 'disabled'}>
         <label class="birdsite__label" for="birdsite-checkbox">
           <span class="birdsite__label-text">
