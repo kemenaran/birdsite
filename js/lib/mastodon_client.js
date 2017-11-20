@@ -37,7 +37,7 @@ class MastodonClient {
   // Returns a `Status` object with a structure similar to the Mastodon API.
   async fetchStatusForToot(instance, username, toot) {
     let delay = 2 * 1000; // delay between each attempt (2 seconds by default)
-    let timeout = 60 * 1000; // time before giving up (60 seconds by default)
+    let timeout = 30 * 1000; // time before giving up (60 seconds by default)
 
     let matchingStatus = null;
     let expirationTime = Date.now() + timeout;
