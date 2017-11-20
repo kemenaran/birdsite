@@ -22,15 +22,19 @@ class BirdSiteUI {
   // 
   // - composeForm: a node of the Mastodon compose form in which the extra UI should be injected
   // - actions: an object containing two functions called when the associated action is sent:
-  //   - toggle(checked): sent when the checkbox is checked or unchecked
-  //   - send(message):   sent when the "Toot" button is clicked
-  //   - logout():        sent when the Logout control is clicked
-  constructor(composeForm, actions) {
+  //   - toggle(checked):  sent when the checkbox is checked or unchecked
+  //   - change(text):     sent when the toot text changes
+  //   - send(message):    sent when the "Toot" button is clicked
+  //   - logout():         sent when the Logout control is clicked
+  constructor(composeForm, { toggle, change, send, logout }) {
     this.composeForm = composeForm;
-    this.actions = actions;
+    this.actions = { toggle, change, send, logout };
 
     let tootButton = this.composeForm.querySelector('.compose-form__publish button');
     tootButton.addEventListener('click', this._tootButtonClicked.bind(this));
+
+    let textarea = this.composeForm.querySelector('textarea');
+    textarea.addEventListener('input', this._textareaChanged.bind(this));
     textarea.addEventListener('paste', this._textareaChanged.bind(this));
   }
 
@@ -116,6 +120,12 @@ class BirdSiteUI {
     form.insertAdjacentHTML('beforeend', html);
     form.querySelector('.birdsite__checkbox').addEventListener('change', this._checkboxChanged.bind(this));
     form.querySelector('.birdsite__username').addEventListener('click', this._logoutClicked.bind(this));
+  }
+
+  _textareaChanged(event) {
+    let textarea = event.target;
+    let toot = textarea.value;
+    this.actions.change(toot);
   }
 
   _checkboxChanged(event) {

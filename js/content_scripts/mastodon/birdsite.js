@@ -60,6 +60,7 @@ class BirdSite {
 
     this.birdSiteUI = new BirdSiteUI(composeForm, {
       toggle: this.toggleCheckboxAction.bind(this),
+      change: this.tootChangeAction.bind(this),
       send:   this.crossPostToTwitterAction.bind(this),
       logout: this.logoutAction.bind(this)
     });
@@ -83,6 +84,16 @@ class BirdSite {
   toggleCheckboxAction(checked) {
     this.store.toggleChecked(checked);
     this.birdSiteUI.render(this.store.state);
+  }
+
+  tootChangeAction(toot) {
+    let isTypingNewToot = toot && toot.length > 0,
+        uiState = this.store.state.uiState,
+        isInFinishedState = (uiState == UIState.SUCCESS || uiState == UIState.FAILURE);
+    if (isTypingNewToot && isInFinishedState) {
+      this.store.resetFromFinishedState();
+      this.birdSiteUI.render(this.store.state);
+    }
   }
 
   async crossPostToTwitterAction(toot) {
@@ -187,6 +198,17 @@ class BirdSiteStore {
     this.state.checked = !!isChecked;
     if (this.state.uiState == UIState.SUCCESS || this.state.uiState == UIState.FAILURE) {
       this.transitionToSignedIn(this.state.username);
+    }
+  }
+
+  resetFromFinishedState() {
+    if (this.state.uiState == UIState.SUCCESS || this.state.uiState == UIState.FAILURE) {
+      let isSignedIn = !!this.state.username;
+      if (isSignedIn) {
+        this.transitionToSignedIn(this.state.username);
+      } else {
+        this.transitionToSignedOut();
+      }
     }
   }
 }
