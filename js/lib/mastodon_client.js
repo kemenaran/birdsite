@@ -41,7 +41,7 @@ class MastodonClient {
 
     let matchingStatus = null;
     let expirationTime = Date.now() + timeout;
-    while (!matchingStatus || (Date.now() < expirationTime)) {
+    while (!matchingStatus && (Date.now() < expirationTime)) {
       let publicStatuses = await this.fetchPublicStatuses(instance, username);
       matchingStatus = publicStatuses.find(status => this._fuzzyMatches(toot, status.content));
       if (matchingStatus) {
