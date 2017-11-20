@@ -31,6 +31,7 @@ class BirdSiteUI {
 
     let tootButton = this.composeForm.querySelector('.compose-form__publish button');
     tootButton.addEventListener('click', this._tootButtonClicked.bind(this));
+    textarea.addEventListener('paste', this._textareaChanged.bind(this));
   }
 
   // Create or update the UI in the compose form from the given model.
@@ -40,6 +41,7 @@ class BirdSiteUI {
       username:        model.username,
       checked:         model.checked,
       labelText:       null,
+      labelTitle:      null,
       enabled:         false,
       identityVisible: false,
     };
@@ -47,31 +49,37 @@ class BirdSiteUI {
     switch (state.step) {
       case UIState.SIGNED_OUT:
         state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
+        state.labelTitle = '';
         state.identityVisible = false;
         state.enabled = true;
         break;
       case UIState.AUTHENTICATING:
         state.labelText = chrome.i18n.getMessage("authenticating");
+        state.labelTitle = '';
         state.identityVisible = false;
         state.enabled = false;
         break;
       case UIState.READY:
         state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
+        state.labelTitle = '';
         state.identityVisible = true;
         state.enabled = true;
         break;
       case UIState.POSTING:
         state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
+        state.labelTitle = '';
         state.identityVisible = true;
         state.enabled = false;
         break;
       case UIState.SUCCESS:
         state.labelText = chrome.i18n.getMessage("postOnTheBirdSite");
+        state.labelTitle = '';
         state.identityVisible = true;
         state.enabled = true;
         break;
       case UIState.FAILURE:
         state.labelText = chrome.i18n.getMessage("anErrorOccured");
+        state.labelTitle = model.errorMessage;
         state.identityVisible = false;
         state.enabled = true;
         break;
@@ -87,7 +95,7 @@ class BirdSiteUI {
     let html = `
       <div class="birdsite birdsite--${state.step} ${state.checked ? 'birdsite--checked' : ''}">
         <input class="birdsite__checkbox" id="birdsite-checkbox" type="checkbox" ${state.checked ? 'checked' : ''} ${state.enabled ? '' : 'disabled'}>
-        <label class="birdsite__label" for="birdsite-checkbox">
+        <label class="birdsite__label" for="birdsite-checkbox" title="${state.labelTitle}">
           <span class="birdsite__label-text">
             ${state.labelText}
           </span>

@@ -114,7 +114,7 @@ class BirdSite {
       this.birdSiteUI.render(this.store.state);
 
     } catch (error) {
-      this.store.transitionToFailure();
+      this.store.transitionToFailure(error);
       this.birdSiteUI.render(this.store.state);
       console.error(error);
     }
@@ -140,40 +140,47 @@ class BirdSite {
 class BirdSiteStore {
   constructor() {
     this.state = {
-      uiState:  UIState.SIGNED_OUT,
-      username: null,
-      checked:  false
+      uiState:      UIState.SIGNED_OUT,
+      username:     null,
+      checked:      false,
+      errorMessage: null
     };
   }
 
   transitionToAuthenticating() {
-    this.state.uiState = UIState.AUTHENTICATING;
+    this.state.uiState  = UIState.AUTHENTICATING;
     this.state.username = null;
+    this.errorMessage   = null;
   }
 
   transitionToSignedIn(username) {
-    this.state.uiState = UIState.READY;
+    this.state.uiState  = UIState.READY;
     this.state.username = username;
+    this.errorMessage   = null;
   }
 
   transitionToSignedOut() {
-    this.state.uiState = UIState.SIGNED_OUT;
+    this.state.uiState  = UIState.SIGNED_OUT;
     this.state.username = null;
+    this.errorMessage   = null;
   }
 
   transitionToPosting() {
     this.state.uiState = UIState.POSTING;
     this.state.checked = true;
+    this.errorMessage  = null;
   }
 
   transitionToSuccess() {
     this.state.uiState = UIState.SUCCESS;
     this.state.checked = false;
+    this.errorMessage  = null;
   }
 
-  transitionToFailure() {
+  transitionToFailure(error) {
     this.state.uiState = UIState.FAILURE;
     this.state.checked = false;
+    this.state.errorMessage = (error && error.toString() || null);
   }
 
   toggleChecked(isChecked) {
