@@ -116,9 +116,9 @@ class BirdSiteUI {
   }
 
   _tootButtonClicked() {
-    let checkbox = document.querySelector('.compose-form .birdsite__checkbox');
+    let checkbox = this.composeForm.querySelector('.birdsite__checkbox');
     if (checkbox.checked) {
-      let textarea = document.querySelector('.compose-form textarea');
+      let textarea = this.composeForm.querySelector('textarea');
       let toot = textarea.value;
       if (toot.length > 0) {
         this.actions.send(toot);
