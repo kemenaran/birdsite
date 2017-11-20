@@ -59,19 +59,36 @@ class TwitterClient {
   }
 
   // Start the OAuth flow, and return a promise that will resolve at the end of the flow.
+  // 
+  // Note: this method will open a pop-up window. To avoid it being blocked by pop-up blockers,
+  // call it in the same event loop than the `click` event.
   async authenticate() {
-    await this._clearCredentials();
+    // Open an empty pop-up window as soon as possible (to avoid pop-up blockers)
+    let popup = window.open('about:blank', 'Authenticating with Twitter…');
+    if (!popup) {
+      throw new Error('[TwitterClient] The pop-up window was blocked. Try disabling the pop-up blocker of your browser.');
+    }
 
-    let response = await this.api('oauth/request_token', 'POST'),
-        responseText = await response.text(),
-        responseParams = this._extractParameters(responseText);
+    try {
+      // Clear existing credentials
+      await this._clearCredentials();
 
-    // Extract request token
-    let credentials = new TwitterCredentials(responseParams);
+      // Retrieve a request token
+      let response = await this.api('oauth/request_token', 'POST'),
+          responseText = await response.text(),
+          responseParams = this._extractParameters(responseText),
+          credentials = new TwitterCredentials(responseParams);
 
-    // Open a pop-up window to start the OAuth flow
-    var url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + credentials.oauth_token;
-    window.open(url);
+      // Load the authentication URL into the pop-up window to start the OAuth flow
+      let url = 'https://api.twitter.com/oauth/authenticate?oauth_token=' + credentials.oauth_token;
+      popup.location = url;
+
+    } catch (error) {
+      if (popup) {
+        popup.close();
+      }
+      throw new Error('[TwitterClient] Error while starting the OAuth flow: ' + error);
+    }
 
     // Listen for messages sent by the background page
     chrome.runtime.onMessage.addListener(this._didReceiveMessage.bind(this));
@@ -317,10 +334,14 @@ class TwitterCredentials {
     this.screen_name = credentials.screen_name || null;
   }
 
+  get isComplete() {
+    return this.oauth_token && this.oauth_token_secret && this.screen_name;
+  }
+
   static async load() {
     let results = await _toPromise(chrome.storage.local.get)(['oauth_token', 'oauth_token_secret', 'screen_name']);
-    let isValid = results.oauth_token && results.oauth_token_secret && results.screen_name;
-    if (isValid) {
+    let isComplete = results.oauth_token && results.oauth_token_secret && results.screen_name;
+    if (isComplete) {
       return new TwitterCredentials(results);
     } else {
       return null;

@@ -98,11 +98,14 @@ class BirdSite {
 
   async crossPostToTwitterAction(toot) {
     try {
-      let hasCredentials = await this.twitterClient.loadCredentials();
-      if (!hasCredentials) {
+      let hasCredentials = !!this.store.state.username;
+      if (! hasCredentials) {
         this.store.transitionToAuthenticating();
         this.birdSiteUI.render(this.store.state);
         
+        // `twitterClient.authenticate()` will open a pop-up window.
+        // To avoid it being blocked by pop-up blockers, ensure this method
+        // is called in the same event loop than the `click` event.
         let username = await this.twitterClient.authenticate();
 
         this.store.transitionToSignedIn(username);
