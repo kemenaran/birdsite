@@ -55,7 +55,7 @@ class MastodonClient {
     if (matchingStatus) {
       return matchingStatus;
     } else {
-      throw new Error("Couldn’t find a status for user '${username}' matching '${toot}'");
+      throw new Error(`[MastodonClient] Couldn’t find a status in user '${username}' Atom feed matching '${toot}'`);
     }
   }
 
