@@ -11,10 +11,10 @@
     }
   },
   "icons": {
-    "16":  "icons/birdsite.svg",
-    "48":  "icons/birdsite.svg",
-    "96":  "icons/birdsite.svg",
-    "128": "icons/birdsite.svg"
+    "16":  "icons/birdsite16.png",
+    "48":  "icons/birdsite48.png",
+    "96":  "icons/birdsite96.png",
+    "128": "icons/birdsite128.png"
   },
   "default_locale": "en",
   "content_scripts": [
