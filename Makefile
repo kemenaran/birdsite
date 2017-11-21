@@ -5,6 +5,6 @@ install:
 	command -v web-ext >/dev/null 2>&1 || npm install --global web-ext
 
 build:
-	web-ext build --overwrite-dest
+	web-ext build --overwrite-dest --ignore-files="assets/"
 
 .PHONY: default install build
