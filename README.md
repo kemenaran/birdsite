@@ -22,6 +22,11 @@ and to ask for permission to post the tweet in your name. You only have to do th
 Afterwards, toots sent while the checkbox is ticked will also be posted on your
 Twitter account.
 
+## How to build
+
+1. Clone the repository
+2. `make all`
+
 ## License
 
 This extension is licensed under the terms of the GPL v3 license. (see LICENSE.md)
